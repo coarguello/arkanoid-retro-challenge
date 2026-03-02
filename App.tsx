@@ -676,6 +676,7 @@ const App: React.FC = () => {
         initialLives={lives}
         shipConfig={shipConfig}
         inventory={inventory} // Pass down inventory for custom drawing
+        useVirtualControls={useVirtualControls}
       />
 
       {/* HUD overlaid on top of canvas */}
@@ -725,23 +726,10 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Buttons (Pause & Mute) */}
-        <div className="flex items-center gap-2 pointer-events-auto absolute right-4 top-14">
-          {gameState === GameState.PLAYING && (
-            <button
-              onClick={() => setGameState(GameState.PAUSED)}
-              className="p-2 bg-black/50 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
-              title="Pausar"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-              </svg>
-            </button>
-          )}
-        </div>
+        {/* Buttons (Pause & Mute) removed to be merged below */}
 
         {/* Top Right System Toggles */}
-        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <div className="absolute top-16 right-4 z-50 flex items-center gap-2 pointer-events-auto">
           {/* Virtual Controls Toggle Button */}
           <button
             onClick={toggleVirtualControls}
@@ -768,6 +756,19 @@ const App: React.FC = () => {
               </svg>
             )}
           </button>
+
+          {/* Pause Button */}
+          {gameState === GameState.PLAYING && (
+            <button
+              onClick={() => setGameState(GameState.PAUSED)}
+              className="p-2 bg-black/50 border border-zinc-800 rounded-lg text-zinc-500 hover:text-white transition-colors"
+              title="Pausar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
