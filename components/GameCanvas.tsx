@@ -532,7 +532,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const dx = touch.clientX - centerX;
     const dy = touch.clientY - centerY;
 
-    const maxR = rect.width / 2 - 24;
+    const maxR = rect.width / 2 - 32;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist > maxR) {
@@ -1626,14 +1626,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         <div className="absolute inset-0 pointer-events-none z-50 flex justify-between items-end pb-8 px-8">
           {/* Left Virtual Joystick */}
           <div
-            className="w-32 h-32 rounded-full border-2 border-white/20 bg-white/10 pointer-events-auto relative touch-none"
+            className="w-48 h-48 rounded-full border-2 border-white/20 bg-white/10 pointer-events-auto relative touch-none"
             onTouchStart={(e) => handleJoy(e, true)}
             onTouchMove={(e) => handleJoy(e, true)}
             onTouchEnd={(e) => handleJoy(e, false)}
             onTouchCancel={(e) => handleJoy(e, false)}
           >
             {/* Inner knob */}
-            <div className="absolute w-12 h-12 rounded-full bg-white/40 left-1/2 top-1/2 shadow-lg"
+            <div className="absolute w-16 h-16 rounded-full bg-white/40 left-1/2 top-1/2 shadow-lg"
               style={{ transform: `translate(calc(-50% + ${joyPos.x}px), calc(-50% + ${joyPos.y}px))` }}
             />
           </div>
