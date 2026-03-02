@@ -1,0 +1,5 @@
+{
+  "name": "Arkanoid Retro Challenge",
+  "description": "A classic Arkanoid clone featuring a paddle, a ball, and destructible bricks. Control the blue paddle with A/D, launch the ball with W, and clear all red bricks to win!",
+  "requestFramePermissions": []
+}

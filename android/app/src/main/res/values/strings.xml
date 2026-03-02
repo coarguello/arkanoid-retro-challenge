@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Arkanoid Retro</string>
+    <string name="title_activity_main">Arkanoid Retro</string>
+    <string name="package_name">com.arkanoid.retro</string>
+    <string name="custom_url_scheme">com.arkanoid.retro</string>
+</resources>
