@@ -541,9 +541,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       setJoyPos({ x: dx, y: dy });
     }
 
+    // Set movement direction based on dx relative to the center
     const deadzone = 10;
-    touchState.current.left = dx < -deadzone;
-    touchState.current.right = dx > deadzone;
+    if (dx < -deadzone) {
+      touchState.current.left = true;
+      touchState.current.right = false;
+    } else if (dx > deadzone) {
+      touchState.current.right = true;
+      touchState.current.left = false;
+    } else {
+      touchState.current.left = false;
+      touchState.current.right = false;
+    }
   };
 
   const update = () => {
