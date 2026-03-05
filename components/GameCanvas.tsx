@@ -518,19 +518,41 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [useVirtualControls, fireProjectile]);
 
   const handleJoy = (e: React.TouchEvent<HTMLDivElement>, active: boolean) => {
+    // If we're ending the touch or there are no touches, reset joystick
     if (!active || e.touches.length === 0) {
       setJoyPos({ x: 0, y: 0 });
       touchState.current.left = false;
       touchState.current.right = false;
       return;
     }
-    const touch = e.touches[0];
+
+    // We must find the specific touch that is hitting the joystick container.
+    // e.touches contains ALL current touches on the screen.
     const rect = e.currentTarget.getBoundingClientRect();
+
+    // Find the touch that falls inside this element's bounding box
+    let activeTouch: React.Touch | undefined = undefined;
+    for (let i = 0; i < e.touches.length; i++) {
+      const t = e.touches[i];
+      if (
+        t.clientX >= rect.left && t.clientX <= rect.right &&
+        t.clientY >= rect.top && t.clientY <= rect.bottom
+      ) {
+        activeTouch = t;
+        break;
+      }
+    }
+
+    // Fallback just in case (e.g. they dragged slightly outside but still active)
+    if (!activeTouch) {
+      activeTouch = e.touches[0];
+    }
+
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    const dx = touch.clientX - centerX;
-    const dy = touch.clientY - centerY;
+    const dx = activeTouch.clientX - centerX;
+    const dy = activeTouch.clientY - centerY;
 
     const maxR = rect.width / 2 - 32;
     const dist = Math.sqrt(dx * dx + dy * dy);
