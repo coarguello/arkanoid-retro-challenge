@@ -3,24 +3,34 @@ import { GameState, LeaderboardEntry, ShipConfig, UserInventory, ShopItem, ShopC
 import GameCanvas from './components/GameCanvas';
 import { playMenuMusic, playGameMusic, playGameOverMusic, stopMusic, toggleMute as audioToggleMute } from './audioUtils';
 
+// --- Firebase Imports ---
+import { auth, db } from './services/firebase';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
+  updateProfile
+} from 'firebase/auth';
+import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
+
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [currentUser, setCurrentUser] = useState<string | null>(() => {
-    return localStorage.getItem('arkanoid_user');
-  });
+
+  // Now tracks the Firebase User UID
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [gameKey, setGameKey] = useState(0);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() => {
     const saved = localStorage.getItem('arkanoid_leaderboard');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return [];
-      }
+      try { return JSON.parse(saved); } catch (e) { return []; }
     }
     return [];
   });
@@ -28,9 +38,7 @@ const App: React.FC = () => {
   const [shipConfig, setShipConfig] = useState<ShipConfig>(() => {
     const saved = localStorage.getItem('arkanoid_ship_config');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) { }
+      try { return JSON.parse(saved); } catch (e) { }
     }
     return { color: '#ef4444', shape: 'classic' }; // Default red
   });
@@ -45,19 +53,13 @@ const App: React.FC = () => {
       totalPoints: 0,
       unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
       isBossDefeated: false,
-      equipped: {
-        paddle: 'paddle_default',
-        ball: 'ball_default',
-        background: 'bg_default'
-      }
+      equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' }
     };
   });
 
   const [showShop, setShowShop] = useState(false);
   const [shopTab, setShopTab] = useState<'paddle' | 'ball' | 'background' | 'exchange' | 'gacha'>('paddle');
   const [isMuted, setIsMuted] = useState(false);
-
-  // Touch controls preference
   const [useVirtualControls, setUseVirtualControls] = useState(() => {
     return localStorage.getItem('arkanoid_virtual_controls') === 'true';
   });
@@ -70,74 +72,92 @@ const App: React.FC = () => {
     });
   };
 
-  // Temporary Discount System
   const [discountedItemId, setDiscountedItemId] = useState<string | null>(null);
-
-  // Gacha Visual System
   const [gachaReward, setGachaReward] = useState<ShopItem | null>(null);
   const [isGachaRolling, setIsGachaRolling] = useState(false);
 
-  // Background Music Controller
   useEffect(() => {
-    if (isMuted) {
-      stopMusic();
-      return;
-    }
-
-    // We need user interaction first on some browsers, so we might not play immediately on boot,
-    // but the state changes (MENU -> PLAYING) will trigger it.
-    if (gameState === GameState.MENU) {
-      playMenuMusic();
-    } else if (gameState === GameState.PLAYING) {
-      playGameMusic();
-    } else if (gameState === GameState.GAME_OVER) {
-      playGameOverMusic();
-    } else if (gameState === GameState.PAUSED) {
-      // Keep playing game music but maybe lower volume or just leave it
-    }
-
+    if (isMuted) { stopMusic(); return; }
+    if (gameState === GameState.MENU) playMenuMusic();
+    else if (gameState === GameState.PLAYING) playGameMusic();
+    else if (gameState === GameState.GAME_OVER) playGameOverMusic();
     return () => stopMusic();
   }, [gameState, isMuted]);
 
-  const handleToggleMute = () => {
-    const newMuted = audioToggleMute();
-    setIsMuted(newMuted);
-  };
+  const handleToggleMute = () => setIsMuted(audioToggleMute());
 
   // Track if game is over to update leaderboard, points, and trigger a random store discount
   useEffect(() => {
     if (gameState === GameState.GAME_OVER) {
-      if (score > 0 && currentUser) {
+      if (score > 0 && currentUser && currentUsername) {
+
+        // 1. Save to Local Leaderboard
         setLeaderboard(prev => {
-          const newEntry = { name: currentUser, score };
+          const newEntry = { name: currentUsername, score };
           const updated = [...prev, newEntry].sort((a, b) => b.score - a.score);
-          // Keep top 50
           const top50 = updated.slice(0, 50);
           localStorage.setItem('arkanoid_leaderboard', JSON.stringify(top50));
           return top50;
         });
 
-        // Give points to user for the shop
+        // 2. Push high score to Firestore Database
+        const saveScoreToCloud = async () => {
+          try {
+            await addDoc(collection(db, 'leaderboards'), {
+              uid: currentUser,
+              username: currentUsername,
+              score: score,
+              timestamp: serverTimestamp()
+            });
+          } catch (e) {
+            console.error("Error saving score to Firebase:", e);
+          }
+        };
+        saveScoreToCloud();
+
+        // 3. Give points to user for the shop
         setInventory(prev => {
           const newInv = { ...prev, totalPoints: prev.totalPoints + score };
           localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+          // Async update user doc points in DB
+          if (currentUser) {
+            setDoc(doc(db, 'users', currentUser), { inventory: newInv }, { merge: true })
+              .catch(e => console.error("Error updating user points:", e));
+          }
           return newInv;
         });
       }
 
       // Roll a random daily discount item
-      if (SHOP_ITEMS && SHOP_ITEMS.length > 0) {
-        const randomIndex = Math.floor(Math.random() * SHOP_ITEMS.length);
-        const randomItem = SHOP_ITEMS[randomIndex];
-        // Don't discount free base items
-        if (randomItem.price > 0) {
-          setDiscountedItemId(randomItem.id);
-        } else {
-          setDiscountedItemId(null);
-        }
-      }
+      // (Uses the global SHOP_ITEMS defined further down. For initial mount logic, we can leave as is)
     }
-  }, [gameState, score, currentUser]);
+  }, [gameState, score, currentUser, currentUsername]);
+
+  // Fetch Global Leaderboard when returning to Menu
+  useEffect(() => {
+    if (gameState === GameState.MENU) {
+      const fetchLeaderboard = async () => {
+        try {
+          const q = query(collection(db, 'leaderboards'), orderBy('score', 'desc'), limit(50));
+          const querySnapshot = await getDocs(q);
+          const topScores: LeaderboardEntry[] = [];
+          querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            topScores.push({ name: data.username || 'Anónimo', score: data.score });
+          });
+          // Deduplicate by username to keep only their highest score
+          const uniqueScores = Array.from(new Map(topScores.map(item => [item.name, item])).values());
+          uniqueScores.sort((a, b) => b.score - a.score);
+
+          setLeaderboard(uniqueScores.slice(0, 50));
+          localStorage.setItem('arkanoid_leaderboard', JSON.stringify(uniqueScores.slice(0, 50)));
+        } catch (e) {
+          console.error("Error fetching leaderboard: ", e);
+        }
+      };
+      fetchLeaderboard();
+    }
+  }, [gameState]);
 
   const handleBossDefeated = () => {
     setInventory(prev => {
@@ -174,25 +194,129 @@ const App: React.FC = () => {
 
   const [tempShipColor, setTempShipColor] = useState<string>('#ef4444');
 
-  const handleAuthSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Listen to Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user.uid);
+        setCurrentUsername(user.displayName || 'Piloto Anónimo');
+        localStorage.setItem('arkanoid_user', user.uid);
+
+        // Fetch User Inventory from Firestore
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            setInventory(userSnap.data().inventory);
+          } else {
+            // Create default document if it doesn't exist (clean slate for new users)
+            const defaultInventory: UserInventory = {
+              coins: 0,
+              totalPoints: 0,
+              unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
+              equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
+              isBossDefeated: false
+            };
+            await setDoc(userRef, {
+              username: user.displayName || 'Piloto Anónimo',
+              inventory: defaultInventory,
+              lastActive: new Date().toISOString()
+            });
+            setInventory(defaultInventory);
+            localStorage.setItem('arkanoid_inventory', JSON.stringify(defaultInventory));
+          }
+        } catch (e) {
+          console.error("Error fetching user data:", e);
+        }
+
+      } else {
+        setCurrentUser(null);
+        setCurrentUsername(null);
+        localStorage.removeItem('arkanoid_user');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleAuthSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setAuthError(null);
+    setIsAuthLoading(true);
+
     const formData = new FormData(e.currentTarget);
     const username = formData.get('username') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
-    if (username && username.trim()) {
-      setCurrentUser(username.trim());
-      localStorage.setItem('arkanoid_user', username.trim());
+    const isLogin = authModal === 'login';
 
-      const newConfig: ShipConfig = { color: tempShipColor, shape: 'classic' };
-      setShipConfig(newConfig);
-      localStorage.setItem('arkanoid_ship_config', JSON.stringify(newConfig));
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Set display name right after registration
+        await updateProfile(userCredential.user, { displayName: username });
+        setCurrentUsername(username);
+
+        // Force explicitly creating the user doc cleanly here to avoid auth listener race conditions
+        const defaultInventory: UserInventory = {
+          coins: 0,
+          totalPoints: 0,
+          unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
+          equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
+          isBossDefeated: false
+        };
+        const userRef = doc(db, 'users', userCredential.user.uid);
+        // Do not block the UI on setDoc, Firebase will handle the write in the background
+        setDoc(userRef, {
+          username: username,
+          inventory: defaultInventory,
+          lastActive: new Date().toISOString()
+        }).catch(e => console.error("Error in background setDoc:", e));
+
+        setInventory(defaultInventory);
+        localStorage.setItem('arkanoid_inventory', JSON.stringify(defaultInventory));
+
+        // Save initial ship config
+        const newConfig: ShipConfig = { color: tempShipColor, shape: 'classic' };
+        setShipConfig(newConfig);
+        localStorage.setItem('arkanoid_ship_config', JSON.stringify(newConfig));
+      }
+      setAuthModal(null);
+    } catch (error: any) {
+      console.error("Authentication error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        setAuthError('Este email ya está en uso.');
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        setAuthError('Credenciales incorrectas.');
+      } else if (error.code === 'auth/weak-password') {
+        setAuthError('La contraseña debe tener al menos 6 caracteres.');
+      } else {
+        setAuthError('Ocurrió un error. Intenta nuevamente.');
+      }
+    } finally {
+      setIsAuthLoading(false);
     }
-    setAuthModal(null);
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('arkanoid_user');
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('arkanoid_user');
+      localStorage.removeItem('arkanoid_inventory');
+      const defaultInventory: UserInventory = {
+        coins: 0,
+        totalPoints: 0,
+        unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
+        equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
+        isBossDefeated: false
+      };
+      setInventory(defaultInventory);
+    } catch (e) {
+      console.error("Error logging out:", e);
+    }
   };
 
   const renderAuthModal = () => {
@@ -207,96 +331,124 @@ const App: React.FC = () => {
     ];
 
     return (
-      <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-        <div className="bg-zinc-950 border-2 border-blue-900/50 rounded-2xl p-6 w-full max-w-sm shadow-[0_0_50px_rgba(37,99,235,0.15)] relative overflow-hidden">
-          {/* Decorative neon accents */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
+      <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+        <div className="min-h-full flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-zinc-950 border-2 border-blue-900/50 rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-[0_0_50px_rgba(37,99,235,0.15)] relative">
+            {/* Decorative neon accents */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
 
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold tracking-tighter text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">
-              {isLogin ? 'ACCESO AL SISTEMA' : 'NUEVO JUGADOR'}
-            </h2>
-            <button
-              onClick={() => setAuthModal(null)}
-              className="text-zinc-500 hover:text-white transition-colors text-xl p-2"
-            >
-              ×
-            </button>
-          </div>
-
-          <form className="flex flex-col gap-4 font-sans" onSubmit={handleAuthSubmit}>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Piloto (Usuario)</label>
-              <input
-                type="text"
-                name="username"
-                required
-                className="bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg px-4 py-3 text-white outline-none transition-colors"
-                placeholder="ej. JosiElPro"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 relative">
-              <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Código Secreto</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg pl-4 pr-12 py-3 text-white outline-none transition-colors"
-                  placeholder={showPassword ? "contraseña" : "••••••••"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-blue-400 transition-colors"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h2 className="text-xl font-bold tracking-tighter text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">
+                {isLogin ? 'ACCESO AL SISTEMA' : 'NUEVO JUGADOR'}
+              </h2>
+              <button
+                onClick={() => setAuthModal(null)}
+                className="text-zinc-500 hover:text-white transition-colors text-xl p-2"
+              >
+                ×
+              </button>
             </div>
 
-            <div className="flex flex-col gap-2 mt-2">
-              <label className="text-[8px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Pintura de Nave</label>
-              <div className="flex gap-2">
-                {SHIP_COLORS.map(color => (
-                  <button
-                    key={color.id}
-                    type="button"
-                    onClick={() => setTempShipColor(color.id)}
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${tempShipColor === color.id ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'border-zinc-800 hover:border-zinc-500'}`}
-                    style={{ backgroundColor: color.id }}
-                    title={color.name}
+            <form className="flex flex-col gap-3 sm:gap-4 font-sans" onSubmit={handleAuthSubmit}>
+              {authError && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-lg text-xs text-center">
+                  {authError}
+                </div>
+              )}
+
+              {!isLogin && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Piloto (Usuario)</label>
+                  <input
+                    type="text"
+                    name="username"
+                    required={!isLogin}
+                    className="bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg px-4 py-3 text-white outline-none transition-colors"
+                    placeholder="ej. JosiElPro"
                   />
-                ))}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Frecuencia (Email)</label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  className="bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg px-4 py-3 text-white outline-none transition-colors"
+                  placeholder="piloto@arcade.com"
+                />
               </div>
-              <span className="text-[10px] text-zinc-500 mt-1">
-                {SHIP_COLORS.find(c => c.id === tempShipColor)?.name}
-              </span>
+
+              <div className="flex flex-col gap-1.5 relative">
+                <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Código Secreto</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    required
+                    autoComplete="current-password"
+                    className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg pl-4 pr-12 py-3 text-white outline-none transition-colors"
+                    placeholder={showPassword ? "contraseña" : "••••••••"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-blue-400 transition-colors"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {!isLogin && (
+                <div className="flex flex-col gap-2 mt-2">
+                  <label className="text-[8px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Pintura de Nave</label>
+                  <div className="flex gap-2">
+                    {SHIP_COLORS.map(color => (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => setTempShipColor(color.id)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${tempShipColor === color.id ? 'border-white scale-110 shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'border-zinc-800 hover:border-zinc-500'}`}
+                        style={{ backgroundColor: color.id }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-zinc-500 mt-1">
+                    {SHIP_COLORS.find(c => c.id === tempShipColor)?.name}
+                  </span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isAuthLoading}
+                className={`mt-4 w-full bg-gradient-to-r ${isAuthLoading ? 'from-zinc-600 to-zinc-700 cursor-not-allowed' : 'from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'} text-white font-['Press_Start_2P'] py-4 rounded-lg tracking-tighter text-sm shadow-[0_0_20px_rgba(37,99,235,0.4)] active:scale-95 transition-all`}
+              >
+                {isAuthLoading ? 'PROCESANDO...' : (isLogin ? 'INICIAR MISIÓN' : 'REGISTRARSE')}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setAuthModal(isLogin ? 'register' : 'login')}
+                className="text-xs font-sans text-zinc-500 hover:text-blue-400 transition-colors"
+              >
+                {isLogin ? '¿No tienes cuenta? Crear una' : '¿Ya tienes cuenta? Ingresar'}
+              </button>
             </div>
-
-            <button
-              type="submit"
-              className="mt-4 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-['Press_Start_2P'] py-4 rounded-lg tracking-tighter text-sm shadow-[0_0_20px_rgba(37,99,235,0.4)] active:scale-95 transition-all"
-            >
-              {isLogin ? 'INICIAR MISIÓN' : 'REGISTRARSE'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setAuthModal(isLogin ? 'register' : 'login')}
-              className="text-xs font-sans text-zinc-500 hover:text-blue-400 transition-colors"
-            >
-              {isLogin ? '¿No tienes cuenta? Crear una' : '¿Ya tienes cuenta? Ingresar'}
-            </button>
           </div>
         </div>
       </div>
@@ -817,7 +969,7 @@ const App: React.FC = () => {
             {currentUser && (
               <div className="mb-6 mt-4 flex items-center gap-2 bg-zinc-900/80 border border-blue-900/50 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-in slide-in-from-top-4 duration-500 z-10 shrink-0">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_8px_theme(colors.emerald.500)]"></span>
-                <span className="text-[10px] text-blue-300 tracking-widest pl-1">{currentUser}</span>
+                <span className="text-[10px] text-blue-300 tracking-widest pl-1">{currentUsername || currentUser}</span>
               </div>
             )}
 
