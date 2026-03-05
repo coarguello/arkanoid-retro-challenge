@@ -1038,7 +1038,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     if (allCleared && transitionTimerRef.current <= 0) {
       // Start Hyperspace Transition
-      transitionTimerRef.current = 150; // ~2.5 seconds at 60fps
+      transitionTimerRef.current = 180; // 3 seconds at 60fps for the loading bar
       paddleVelocityRef.current = 0;
       playSound('launch'); // Warp sound indicator
 
@@ -1585,19 +1585,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         if (transitionTimerRef.current > 0) {
           transitionTimerRef.current--;
 
-          // Paddle flies forward sequence
-          paddleVelocityRef.current += 0.5;
-          paddleRef.current.y -= paddleVelocityRef.current; // Fly up
-
-          // Stars go hypersonic
-          starsRef.current.forEach(star => {
-            star.y += star.speed * 15; // 15x normal speed warp
-            if (star.y > GAME_H) {
-              star.y = 0;
-              star.x = Math.random() * GAME_W;
-            }
-          });
-
           // Trigger level change when timer finishes
           if (transitionTimerRef.current <= 0) {
             levelRef.current++;
@@ -1607,7 +1594,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             }
             initBricks();
             resetBall();
-            paddleRef.current.y = 370; // Reset paddle position back to bottom
+            paddleRef.current.y = 370; // Reset just in case
             paddleVelocityRef.current = 0;
             if (livesRef.current < initialLives) {
               addFeedbackText(`LEVEL ${levelRef.current} READY`, GAME_W / 2, GAME_H / 2, '#4ade80');
@@ -1617,7 +1604,37 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             playSound('launch'); // level up sound substitute
           }
         }
+
         draw(ctx);
+
+        // Draw PREPARATE NIVEL and Loading Bar on top
+        if (transitionTimerRef.current > 0) {
+          const nextLevel = levelRef.current + 1;
+
+          // Darken background slightly
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+          // Text
+          ctx.fillStyle = 'white';
+          ctx.font = '16px "Press Start 2P"';
+          ctx.textAlign = 'center';
+          ctx.fillText(`PREPARATE NIVEL ${nextLevel}`, GAME_W / 2, GAME_H / 2 - 20);
+
+          // Loading Bar
+          const barW = 200;
+          const barH = 12;
+          const barX = GAME_W / 2 - barW / 2;
+          const barY = GAME_H / 2 + 20;
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(barX, barY, barW, barH);
+
+          const progress = 1 - (transitionTimerRef.current / 180); // 0 to 1
+          ctx.fillStyle = '#3b82f6'; // Blue loading fill
+          ctx.fillRect(barX + 2, barY + 2, (barW - 4) * progress, barH - 4);
+        }
       }
     }
     requestRef.current = requestAnimationFrame(animate);
