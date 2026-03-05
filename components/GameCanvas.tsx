@@ -1611,8 +1611,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         if (transitionTimerRef.current > 0) {
           const nextLevel = levelRef.current + 1;
 
-          // Darken background slightly
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          // Solid Black Background
+          ctx.fillStyle = '#000000';
           ctx.fillRect(0, 0, GAME_W, GAME_H);
 
           // Text
