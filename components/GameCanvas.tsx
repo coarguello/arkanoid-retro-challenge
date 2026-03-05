@@ -1618,8 +1618,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
           ctx.save();
 
+          // --- Retro Arcade Scanlines Effect ---
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+          for (let y = 0; y < GAME_H; y += 4) {
+            ctx.fillRect(0, y, GAME_W, 2);
+          }
+
           // Pulsing Glow Effect
           const pulse = Math.abs(Math.sin(Date.now() / 200));
+          const scale = 1 + (progress * 0.1); // Slowly zoom in up to 10%
+
+          ctx.translate(GAME_W / 2, GAME_H / 2 - 40);
+          ctx.scale(scale, scale);
 
           // Main Text "PREPARATE"
           ctx.shadowColor = '#fbbf24';
@@ -1627,20 +1637,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.fillStyle = '#fde68a';
           ctx.textAlign = 'center';
           ctx.font = '24px "Press Start 2P"';
-          ctx.fillText('PREPARATE', GAME_W / 2, GAME_H / 2 - 40);
+          ctx.fillText('PREPARATE', 0, 0);
 
           // Subtext "NIVEL X"
           ctx.shadowColor = '#e879f9'; // Pinkish-purple glow
           ctx.shadowBlur = 10;
           ctx.fillStyle = '#f0abfc';
           ctx.font = '16px "Press Start 2P"';
-          ctx.fillText(`NIVEL ${nextLevel}`, GAME_W / 2, GAME_H / 2);
+          ctx.fillText(`NIVEL ${nextLevel}`, 0, 40);
+
+          ctx.restore();
+          ctx.save();
 
           // Loading Bar Container
           const barW = 240;
           const barH = 16;
           const barX = GAME_W / 2 - barW / 2;
-          const barY = GAME_H / 2 + 40;
+          const barY = GAME_H / 2 + 30;
 
           ctx.shadowBlur = 0; // Turn off shadow for the container border
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
@@ -1652,12 +1665,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           const segmentWidth = (barW - 4) / segmentCount;
 
           ctx.shadowColor = '#2dd4bf'; // Cyan glow
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 12;
 
           for (let i = 0; i < segmentCount; i++) {
             const segmentProgress = (i + 0.5) / segmentCount; // Use middle of segment for threshold
             if (progress >= segmentProgress) {
-              ctx.fillStyle = '#5eead4'; // Bright Cyan
+              const isLeading = progress < (i + 1.5) / segmentCount;
+              ctx.fillStyle = isLeading && Math.random() > 0.5 ? '#ffffff' : '#5eead4'; // Bright Cyan
               ctx.fillRect(
                 barX + 2 + i * segmentWidth,
                 barY + 2,
@@ -1666,6 +1680,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
               );
             }
           }
+
+          // Percentage Text
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.font = '8px "Press Start 2P"';
+          ctx.textAlign = 'center';
+          ctx.fillText(`CARGANDO... ${Math.floor(progress * 100)}%`, GAME_W / 2, barY + 30);
 
           ctx.restore();
         }
