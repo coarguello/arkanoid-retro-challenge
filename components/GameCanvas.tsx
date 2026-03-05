@@ -1610,30 +1610,64 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         // Draw PREPARATE NIVEL and Loading Bar on top
         if (transitionTimerRef.current > 0) {
           const nextLevel = levelRef.current + 1;
+          const progress = 1 - (transitionTimerRef.current / 180); // 0 to 1
 
           // Solid Black Background
           ctx.fillStyle = '#000000';
           ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-          // Text
-          ctx.fillStyle = 'white';
-          ctx.font = '16px "Press Start 2P"';
+          ctx.save();
+
+          // Pulsing Glow Effect
+          const pulse = Math.abs(Math.sin(Date.now() / 200));
+
+          // Main Text "PREPARATE"
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 15 + pulse * 10;
+          ctx.fillStyle = '#fde68a';
           ctx.textAlign = 'center';
-          ctx.fillText(`PREPARATE NIVEL ${nextLevel}`, GAME_W / 2, GAME_H / 2 - 20);
+          ctx.font = '24px "Press Start 2P"';
+          ctx.fillText('PREPARATE', GAME_W / 2, GAME_H / 2 - 40);
 
-          // Loading Bar
-          const barW = 200;
-          const barH = 12;
+          // Subtext "NIVEL X"
+          ctx.shadowColor = '#e879f9'; // Pinkish-purple glow
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = '#f0abfc';
+          ctx.font = '16px "Press Start 2P"';
+          ctx.fillText(`NIVEL ${nextLevel}`, GAME_W / 2, GAME_H / 2);
+
+          // Loading Bar Container
+          const barW = 240;
+          const barH = 16;
           const barX = GAME_W / 2 - barW / 2;
-          const barY = GAME_H / 2 + 20;
+          const barY = GAME_H / 2 + 40;
 
-          ctx.strokeStyle = '#ffffff';
+          ctx.shadowBlur = 0; // Turn off shadow for the container border
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
           ctx.lineWidth = 2;
           ctx.strokeRect(barX, barY, barW, barH);
 
-          const progress = 1 - (transitionTimerRef.current / 180); // 0 to 1
-          ctx.fillStyle = '#3b82f6'; // Blue loading fill
-          ctx.fillRect(barX + 2, barY + 2, (barW - 4) * progress, barH - 4);
+          // Segmented Loading Fill (Retro Arcade Style)
+          const segmentCount = 20;
+          const segmentWidth = (barW - 4) / segmentCount;
+
+          ctx.shadowColor = '#2dd4bf'; // Cyan glow
+          ctx.shadowBlur = 10;
+
+          for (let i = 0; i < segmentCount; i++) {
+            const segmentProgress = (i + 0.5) / segmentCount; // Use middle of segment for threshold
+            if (progress >= segmentProgress) {
+              ctx.fillStyle = '#5eead4'; // Bright Cyan
+              ctx.fillRect(
+                barX + 2 + i * segmentWidth,
+                barY + 2,
+                segmentWidth - 2, // 2px gap between segments
+                barH - 4
+              );
+            }
+          }
+
+          ctx.restore();
         }
       }
     }
