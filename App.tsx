@@ -100,15 +100,20 @@ const App: React.FC = () => {
           return top50;
         });
 
-        // 2. Push high score to Firestore Database
+        // 2. Push high score to Firestore Database (Only if it's their best)
         const saveScoreToCloud = async () => {
           try {
-            await addDoc(collection(db, 'leaderboards'), {
-              uid: currentUser,
-              username: currentUsername,
-              score: score,
-              timestamp: serverTimestamp()
-            });
+            const userScoreRef = doc(db, 'leaderboards', currentUser);
+            const userScoreSnap = await getDoc(userScoreRef);
+
+            if (!userScoreSnap.exists() || score > userScoreSnap.data().score) {
+              await setDoc(userScoreRef, {
+                uid: currentUser,
+                username: currentUsername,
+                score: score,
+                timestamp: serverTimestamp()
+              });
+            }
           } catch (e) {
             console.error("Error saving score to Firebase:", e);
           }
@@ -207,7 +212,9 @@ const App: React.FC = () => {
           const userRef = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
-            setInventory(userSnap.data().inventory);
+            const cloudInv = userSnap.data().inventory;
+            setInventory(cloudInv);
+            localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
           } else {
             // Create default document if it doesn't exist (clean slate for new users)
             const defaultInventory: UserInventory = {
