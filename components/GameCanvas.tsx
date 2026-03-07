@@ -679,6 +679,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           }
         }
       });
+
+      // Player projectile collision with enemies
+      enemiesRef.current.forEach(enemy => {
+        if (enemy.active && p.active && p.x > enemy.x && p.x < enemy.x + enemy.width && p.y > enemy.y && p.y < enemy.y + enemy.height) {
+          p.active = false;
+          enemy.active = false;
+          onScoreUpdateRef.current(50);
+          addFeedbackText('+50', enemy.x + enemy.width / 2, enemy.y, '#f59e0b');
+          createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#f59e0b', 10, true); // Orange sparks
+          playSound('brick');
+        }
+      });
     });
     projectilesRef.current = projectilesRef.current.filter(p => p.active && p.y > 0);
 
@@ -965,6 +977,32 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             if (b.type === 'BONUS') handleBonusEffect(b.x + b.width / 2, b.y + b.height / 2);
             else if (Math.random() < 0.2) spawnCollectible(b.x + b.width / 2, b.y + b.height / 2);
           }
+        }
+      });
+
+      // Ball collision with Enemies
+      enemiesRef.current.forEach(enemy => {
+        if (enemy.active && ball.x + ball.radius > enemy.x && ball.x - ball.radius < enemy.x + enemy.width &&
+            ball.y + ball.radius > enemy.y && ball.y - ball.radius < enemy.y + enemy.height) {
+          
+          enemy.active = false;
+          
+          if (!ball.isFireball) {
+            const overlapX = Math.min(ball.x + ball.radius - enemy.x, enemy.x + enemy.width - (ball.x - ball.radius));
+            const overlapY = Math.min(ball.y + ball.radius - enemy.y, enemy.y + enemy.height - (ball.y - ball.radius));
+            if (overlapX < overlapY) ball.dx *= -1; else ball.dy *= -1;
+            normalizeBallVelocity(ball);
+          }
+
+          comboRef.current++;
+          const mult = Math.min(comboRef.current, 5);
+          const score = 50 * mult;
+          onScoreUpdateRef.current(score);
+          addFeedbackText(`+${score}`, enemy.x + enemy.width / 2, enemy.y, mult > 1 ? '#a855f7' : '#f59e0b');
+          if (mult > 1) addFeedbackText(`Combo x${mult}!`, enemy.x + enemy.width / 2, enemy.y - 15, '#facc15');
+
+          createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#f59e0b', 10, true);
+          playSound('brick');
         }
       });
 
