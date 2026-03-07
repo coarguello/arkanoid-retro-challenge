@@ -1023,6 +1023,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       });
     }
 
+    // Wait for cinematic explosions and shakes to finish before transitioning
+    if (explosionsRef.current.length > 0 || shakeRef.current.duration > 0) {
+      allCleared = false;
+    }
+
     if (allCleared && transitionTimerRef.current <= 0) {
       // Start Hyperspace Transition
       transitionTimerRef.current = 180; // 3 seconds at 60fps for the loading bar
