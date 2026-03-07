@@ -901,20 +901,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         createParticles(ball.x, ball.y + ball.radius, sparkColor, 15); // Hit sparks
       }
 
-      // Check ongoing TNT triggers
-      bricksRef.current.forEach(b => {
-        if (b.active && b.triggerTimer !== undefined) {
-          b.triggerTimer--;
-          if (b.triggerTimer <= 0) {
-            if (b.type === 'TNT' || b.type === 'LARGE_TNT') {
-              b.active = false;
-              handleExplosion(b, b.type === 'LARGE_TNT');
-            } else {
-              b.triggerTimer = undefined; // Reset cooldown for GOLD/SILVER
-            }
-          }
-        }
-      });
+
 
       bricksRef.current.forEach(b => {
         if (!b.active) return;
@@ -1046,11 +1033,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ballsRef.current.forEach(b => {
         b.dy = -Math.abs(b.dy); // Push balls upwards
       });
-      // Clear all enemy projectiles
+      // Clear all projectiles to prevent unintended block breaking
+      projectilesRef.current = [];
       enemyProjectilesRef.current = [];
       collectiblesRef.current = [];
       enemiesRef.current = [];
     }
+
+    // Check ongoing TNT triggers (Moved outside of the ball loop)
+    bricksRef.current.forEach(b => {
+      if (b.active && b.triggerTimer !== undefined) {
+        b.triggerTimer--;
+        if (b.triggerTimer <= 0) {
+          if (b.type === 'TNT' || b.type === 'LARGE_TNT') {
+            b.active = false;
+            handleExplosion(b, b.type === 'LARGE_TNT');
+          } else {
+            b.triggerTimer = undefined; // Reset cooldown for GOLD/SILVER
+          }
+        }
+      }
+    });
 
     const activeBalls = ballsRef.current.filter(b => b.y < GAME_H + 20);
     if (activeBalls.length === 0) {
