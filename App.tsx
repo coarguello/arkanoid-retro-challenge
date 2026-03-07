@@ -10,14 +10,16 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
-  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
+  const [authModal, setAuthModal] = useState<'login' | 'register' | 'reset' | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -249,6 +251,7 @@ const App: React.FC = () => {
   const handleAuthSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAuthError(null);
+    setAuthSuccess(null);
     setIsAuthLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -257,9 +260,14 @@ const App: React.FC = () => {
     const password = formData.get('password') as string;
 
     const isLogin = authModal === 'login';
+    const isReset = authModal === 'reset';
 
     try {
-      if (isLogin) {
+      if (isReset) {
+        await sendPasswordResetEmail(auth, email);
+        setAuthSuccess('¡Enlace enviado! Revisa tu bandeja de entrada o spam.');
+        setAuthModal('login');
+      } else if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -298,6 +306,8 @@ const App: React.FC = () => {
         setAuthError('Este email ya está en uso.');
       } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
         setAuthError('Credenciales incorrectas.');
+      } else if (error.code === 'auth/user-not-found') {
+        setAuthError('No se encontró cuenta con ese email.');
       } else if (error.code === 'auth/weak-password') {
         setAuthError('La contraseña debe tener al menos 6 caracteres.');
       } else {
@@ -329,6 +339,7 @@ const App: React.FC = () => {
   const renderAuthModal = () => {
     if (!authModal) return null;
     const isLogin = authModal === 'login';
+    const isReset = authModal === 'reset';
 
     const SHIP_COLORS = [
       { id: '#ef4444', name: 'Rojo Militar' },
@@ -346,7 +357,7 @@ const App: React.FC = () => {
 
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <h2 className="text-xl font-bold tracking-tighter text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">
-                {isLogin ? 'ACCESO AL SISTEMA' : 'NUEVO JUGADOR'}
+                {isReset ? 'RECUPERAR ACCESO' : isLogin ? 'ACCESO AL SISTEMA' : 'NUEVO JUGADOR'}
               </h2>
               <button
                 onClick={() => setAuthModal(null)}
@@ -362,8 +373,13 @@ const App: React.FC = () => {
                   {authError}
                 </div>
               )}
+              {authSuccess && (
+                <div className="bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 p-3 rounded-lg text-xs text-center">
+                  {authSuccess}
+                </div>
+              )}
 
-              {!isLogin && (
+              {!isLogin && !isReset && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Piloto (Usuario)</label>
                   <input
@@ -387,38 +403,40 @@ const App: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5 relative">
-                <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Código Secreto</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    required
-                    autoComplete="current-password"
-                    className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg pl-4 pr-12 py-3 text-white outline-none transition-colors"
-                    placeholder={showPassword ? "contraseña" : "••••••••"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-blue-400 transition-colors"
-                    aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                  >
-                    {showPassword ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    )}
-                  </button>
+              {!isReset && (
+                <div className="flex flex-col gap-1.5 relative">
+                  <label className="text-[10px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Código Secreto</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      required
+                      autoComplete="current-password"
+                      className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-blue-500 rounded-lg pl-4 pr-12 py-3 text-white outline-none transition-colors"
+                      placeholder={showPassword ? "contraseña" : "••••••••"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-blue-400 transition-colors"
+                      aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                    >
+                      {showPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {!isLogin && (
+              {!isLogin && !isReset && (
                 <div className="flex flex-col gap-2 mt-2">
                   <label className="text-[8px] uppercase text-zinc-400 tracking-wider font-['Press_Start_2P']">Pintura de Nave</label>
                   <div className="flex gap-2">
@@ -444,16 +462,24 @@ const App: React.FC = () => {
                 disabled={isAuthLoading}
                 className={`mt-4 w-full bg-gradient-to-r ${isAuthLoading ? 'from-zinc-600 to-zinc-700 cursor-not-allowed' : 'from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'} text-white font-['Press_Start_2P'] py-4 rounded-lg tracking-tighter text-sm shadow-[0_0_20px_rgba(37,99,235,0.4)] active:scale-95 transition-all`}
               >
-                {isAuthLoading ? 'PROCESANDO...' : (isLogin ? 'INICIAR MISIÓN' : 'REGISTRARSE')}
+                {isAuthLoading ? 'PROCESANDO...' : (isReset ? 'ENVIAR CORREO' : isLogin ? 'INICIAR MISIÓN' : 'REGISTRARSE')}
               </button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 flex flex-col gap-2 text-center">
+              {!isReset && (
+                <button
+                  onClick={() => setAuthModal('reset')}
+                  className="text-xs font-sans text-zinc-500 hover:text-blue-400 transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              )}
               <button
                 onClick={() => setAuthModal(isLogin ? 'register' : 'login')}
                 className="text-xs font-sans text-zinc-500 hover:text-blue-400 transition-colors"
               >
-                {isLogin ? '¿No tienes cuenta? Crear una' : '¿Ya tienes cuenta? Ingresar'}
+                {isReset ? 'Volver al inicio de sesión' : isLogin ? '¿No tienes cuenta? Crear una' : '¿Ya tienes cuenta? Ingresar'}
               </button>
             </div>
           </div>
