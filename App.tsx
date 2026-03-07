@@ -982,7 +982,7 @@ const App: React.FC = () => {
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
-            <div className="mb-2 relative shrink-0">
+            <div className="mb-6 relative shrink-0">
               <span className="text-7xl animate-bounce block">🕹️</span>
             </div>
 
