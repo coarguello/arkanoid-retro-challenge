@@ -25,9 +25,10 @@ const App: React.FC = () => {
 
   // Now tracks the Firebase User UID
   const [currentUser, setCurrentUser] = useState<string | null>(null);
-  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(() => localStorage.getItem('arkanoid_username'));
   const [gameKey, setGameKey] = useState(0);
-  const [score, setScore] = useState(0);
+  const [personalScore, setPersonalScore] = useState<number>(0);
+  const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState(3);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() => {
     const saved = localStorage.getItem('arkanoid_leaderboard');
@@ -115,6 +116,7 @@ const App: React.FC = () => {
                 score: score,
                 timestamp: serverTimestamp()
               });
+              setPersonalScore(score); // Update local state for personal best
             }
           } catch (e) {
             console.error("Error saving score to Firebase:", e);
@@ -263,9 +265,23 @@ const App: React.FC = () => {
           console.error("Error fetching user data:", e);
         }
 
+        // Fetch Personal Best Score from Leaderboards
+        try {
+          const userScoreRef = doc(db, 'leaderboards', user.uid);
+          const userScoreSnap = await getDoc(userScoreRef);
+          if (userScoreSnap.exists()) {
+            setPersonalScore(userScoreSnap.data().score);
+          } else {
+            setPersonalScore(0);
+          }
+        } catch (e) {
+          console.error("Error fetching personal score:", e);
+        }
+
       } else {
         setCurrentUser(null);
         setCurrentUsername(null);
+        setPersonalScore(0);
         localStorage.removeItem('arkanoid_user');
       }
     });
@@ -899,7 +915,7 @@ const App: React.FC = () => {
           {gameState === GameState.PLAYING || gameState === GameState.PAUSED ? (
             <>
               <span className="text-[7px] text-zinc-500 uppercase">Récord</span>
-              <span className="text-[10px] text-yellow-500">{(leaderboard[0]?.score || 0).toString().padStart(6, '0')}</span>
+              <span className="text-[10px] text-yellow-500">{personalScore.toString().padStart(6, '0')}</span>
             </>
           ) : (
             <>
