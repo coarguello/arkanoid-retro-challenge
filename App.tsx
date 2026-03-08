@@ -166,6 +166,31 @@ const App: React.FC = () => {
     }
   }, [gameState]);
 
+  // Auto-pause when window loses focus or becomes hidden
+  useEffect(() => {
+    const handlePauseEvent = () => {
+      // Only pause if the game is actively being played
+      setGameState(currentState => {
+        if (currentState === GameState.PLAYING) {
+          return GameState.PAUSED;
+        }
+        return currentState;
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) handlePauseEvent();
+    };
+
+    window.addEventListener('blur', handlePauseEvent);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('blur', handlePauseEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const handleBossDefeated = () => {
     setInventory(prev => {
       if (!prev.isBossDefeated) {
