@@ -1053,12 +1053,14 @@ const App: React.FC = () => {
                 <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
               </button>
 
-              <button
-                onClick={() => setShowShop(true)}
-                className="w-full px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-yellow-500 font-bold border-2 border-yellow-900/50 hover:border-yellow-500 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
-              >
-                <span className="text-xl">🛒</span> TIENDA
-              </button>
+              {currentUser && (
+                <button
+                  onClick={() => setShowShop(true)}
+                  className="w-full px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-yellow-500 font-bold border-2 border-yellow-900/50 hover:border-yellow-500 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                >
+                  <span className="text-xl">🛒</span> TIENDA
+                </button>
+              )}
 
               {currentUser ? (
                 <button
