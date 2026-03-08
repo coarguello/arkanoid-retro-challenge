@@ -926,11 +926,25 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           // Bounced off the left side
           ball.x = paddleRef.current.x - ball.radius;
           ball.dx = -Math.abs(ball.dx); // Force leftwards
+          
+          // CRITICAL: In Arkanoid, saving with the edge should still bounce the ball UP to save the player
+          if (ball.dy > 0) {
+            ball.dy = -Math.abs(ball.dy);
+            comboRef.current = 0;
+            paddleRef.current.flash = 0.5;
+          }
           playSound('paddle');
         } else if (minOverlap === overlapRight) {
           // Bounced off the right side
           ball.x = paddleRef.current.x + paddleRef.current.width + ball.radius;
           ball.dx = Math.abs(ball.dx); // Force rightwards
+          
+          // Send it upwards to save the player
+          if (ball.dy > 0) {
+            ball.dy = -Math.abs(ball.dy);
+            comboRef.current = 0;
+            paddleRef.current.flash = 0.5;
+          }
           playSound('paddle');
         }
       }
