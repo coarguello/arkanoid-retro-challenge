@@ -890,27 +890,49 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         normalizeBallVelocity(ball);
       }
 
+      // Paddle Collision
       if (ball.y + ball.radius >= paddleRef.current.y && ball.y - ball.radius <= paddleRef.current.y + paddleRef.current.height &&
-        ball.x >= paddleRef.current.x && ball.x <= paddleRef.current.x + paddleRef.current.width && ball.dy > 0) {
-        ball.y = paddleRef.current.y - ball.radius; // Snaps to top of paddle to prevent vibrating inside
+          ball.x + ball.radius >= paddleRef.current.x && ball.x - ball.radius <= paddleRef.current.x + paddleRef.current.width) {
+        
+        const overlapTop = (ball.y + ball.radius) - paddleRef.current.y;
+        const overlapLeft = (ball.x + ball.radius) - paddleRef.current.x;
+        const overlapRight = (paddleRef.current.x + paddleRef.current.width) - (ball.x - ball.radius);
+        
+        // Find which face of the paddle we hit
+        const minOverlap = Math.min(overlapTop, overlapLeft, overlapRight);
 
-        comboRef.current = 0; // Reset combo when bouncing on paddle
-        const hitPos = (ball.x - (paddleRef.current.x + paddleRef.current.width / 2)) / (paddleRef.current.width / 2);
-        const angle = hitPos * (Math.PI / 3);
-        ball.dx = Math.sin(angle) * currentSpeedRef.current;
-        ball.dy = -Math.cos(angle) * currentSpeedRef.current;
-        playSound('paddle');
-        paddleRef.current.flash = 0.8;
+        if (minOverlap === overlapTop && ball.dy > 0) {
+          // Hit the top of the paddle
+          ball.y = paddleRef.current.y - ball.radius; // Cleanly snaps to top
+          comboRef.current = 0; // Reset combo when bouncing on paddle
+          const hitPos = (ball.x - (paddleRef.current.x + paddleRef.current.width / 2)) / (paddleRef.current.width / 2);
+          const angle = hitPos * (Math.PI / 3);
+          ball.dx = Math.sin(angle) * currentSpeedRef.current;
+          ball.dy = -Math.cos(angle) * currentSpeedRef.current;
+          
+          playSound('paddle');
+          paddleRef.current.flash = 0.8;
 
-        // Dynamic Hit Sparks based on equipped paddle color
-        const equippedPaddle = inventoryRef.current?.equipped.paddle;
-        let sparkColor = '#60a5fa'; // Fast default (red classic uses blue sparks to contrast)
-        if (equippedPaddle === 'paddle_blue') sparkColor = '#93c5fd';
-        if (equippedPaddle === 'paddle_toxic') sparkColor = '#6ee7b7';
-        if (equippedPaddle === 'paddle_neon') sparkColor = '#f472b6'; // Hot pink sparks
-        if (equippedPaddle === 'paddle_plasma') sparkColor = '#ffffff';
+          // Dynamic Hit Sparks based on equipped paddle color
+          const equippedPaddle = inventoryRef.current?.equipped.paddle;
+          let sparkColor = '#60a5fa'; // Fast default
+          if (equippedPaddle === 'paddle_blue') sparkColor = '#93c5fd';
+          if (equippedPaddle === 'paddle_toxic') sparkColor = '#6ee7b7';
+          if (equippedPaddle === 'paddle_neon') sparkColor = '#f472b6';
+          if (equippedPaddle === 'paddle_plasma') sparkColor = '#ffffff';
 
-        createParticles(ball.x, ball.y + ball.radius, sparkColor, 15); // Hit sparks
+          createParticles(ball.x, ball.y + ball.radius, sparkColor, 15);
+        } else if (minOverlap === overlapLeft) {
+          // Bounced off the left side
+          ball.x = paddleRef.current.x - ball.radius;
+          ball.dx = -Math.abs(ball.dx); // Force leftwards
+          playSound('paddle');
+        } else if (minOverlap === overlapRight) {
+          // Bounced off the right side
+          ball.x = paddleRef.current.x + paddleRef.current.width + ball.radius;
+          ball.dx = Math.abs(ball.dx); // Force rightwards
+          playSound('paddle');
+        }
       }
 
 
