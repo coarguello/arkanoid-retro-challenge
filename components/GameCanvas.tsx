@@ -698,11 +698,26 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     enemiesRef.current.forEach(enemy => {
       // Movement
       enemy.x += enemy.dx;
+      
+      let collidedWithWall = false;
       if (enemy.x <= 0) {
         enemy.x = 0;
-        enemy.dx *= -1;
+        collidedWithWall = true;
       } else if (enemy.x + enemy.width >= GAME_W) {
         enemy.x = GAME_W - enemy.width;
+        collidedWithWall = true;
+      } else {
+        // Prevent passing through active bricks
+        for (const b of bricksRef.current) {
+          if (b.active && enemy.x < b.x + b.width && enemy.x + enemy.width > b.x && enemy.y < b.y + b.height && enemy.y + enemy.height > b.y) {
+            enemy.x -= enemy.dx; // Revert movement
+            collidedWithWall = true;
+            break;
+          }
+        }
+      }
+
+      if (collidedWithWall) {
         enemy.dx *= -1;
       }
 
