@@ -47,6 +47,7 @@ export interface Ball {
   isFireball?: boolean; // Temporary buff
   styleId?: string; // Equipped style ID
   combo?: number; // Per-ball combo tracker
+  speedMultiplier?: number; // Per-ball speed modifier
 }
 
 export interface Projectile {

@@ -166,9 +166,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const normalizeBallVelocity = (ball: Ball) => {
     const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+    const targetSpeed = currentSpeedRef.current * (ball.speedMultiplier || 1.0);
     if (currentSpeed > 0) {
-      ball.dx = (ball.dx / currentSpeed) * currentSpeedRef.current;
-      ball.dy = (ball.dy / currentSpeed) * currentSpeedRef.current;
+      ball.dx = (ball.dx / currentSpeed) * targetSpeed;
+      ball.dy = (ball.dy / currentSpeed) * targetSpeed;
     }
   };
 
@@ -203,7 +204,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     collectiblesRef.current.push({ x, y, width: 14, height: 14, active: true, type });
   };
 
-  const handleExplosion = useCallback((brick: Brick, isMega: boolean = false) => {
+  const handleExplosion = useCallback((brick: Brick, isMega: boolean = false, triggeringBall?: Ball) => {
     const radius = isMega ? 200 : 100;
     const score = isMega ? 1000 : 300;
 
@@ -260,11 +261,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     });
 
     // Execute pending bonuses safely outside the explosion loop
-    pendingBonuses.forEach(b => handleBonusEffect(b.x, b.y));
+    pendingBonuses.forEach(b => handleBonusEffect(b.x, b.y, triggeringBall));
 
   }, []);
 
-  const handleBonusEffect = (x: number, y: number) => {
+  const handleBonusEffect = (x: number, y: number, ball?: Ball) => {
     const rand = Math.random();
 
     if (rand < 0.2) {
@@ -306,21 +307,39 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         playSound('launch');
       }
     } else if (rand < 0.85) {
-      currentSpeedRef.current = 8.5;
       addFeedbackText("¡MÁS RÁPIDO!", x, y, "#ef4444");
-      ballsRef.current.forEach(normalizeBallVelocity);
-      setTimeout(() => {
-        currentSpeedRef.current = 5.5;
+      if (ball) {
+        ball.speedMultiplier = 1.55;
+        normalizeBallVelocity(ball);
+        setTimeout(() => {
+          ball.speedMultiplier = 1.0;
+          normalizeBallVelocity(ball);
+        }, EFFECT_DURATION);
+      } else {
+        currentSpeedRef.current = 8.5;
         ballsRef.current.forEach(normalizeBallVelocity);
-      }, EFFECT_DURATION);
+        setTimeout(() => {
+          currentSpeedRef.current = 5.5;
+          ballsRef.current.forEach(normalizeBallVelocity);
+        }, EFFECT_DURATION);
+      }
     } else {
-      currentSpeedRef.current = 3.5;
       addFeedbackText("¡MÁS LENTO!", x, y, "#4ade80");
-      ballsRef.current.forEach(normalizeBallVelocity);
-      setTimeout(() => {
-        currentSpeedRef.current = 5.5;
+      if (ball) {
+        ball.speedMultiplier = 0.65;
+        normalizeBallVelocity(ball);
+        setTimeout(() => {
+          ball.speedMultiplier = 1.0;
+          normalizeBallVelocity(ball);
+        }, EFFECT_DURATION);
+      } else {
+        currentSpeedRef.current = 3.5;
         ballsRef.current.forEach(normalizeBallVelocity);
-      }, EFFECT_DURATION);
+        setTimeout(() => {
+          currentSpeedRef.current = 5.5;
+          ballsRef.current.forEach(normalizeBallVelocity);
+        }, EFFECT_DURATION);
+      }
     }
   };
 
@@ -1050,13 +1069,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             createParticles(b.x + b.width / 2, b.y + b.height / 2, debrisColor, 10, true);
             playSound('brick');
             if (b.type === 'BONUS') {
-              // Determine spawn location (from active ball)
-              const activeBall = ballsRef.current.find(b => b.launched);
-              if (activeBall) {
-                const b1: Ball = { ...activeBall, dx: activeBall.dx * 0.8, dy: activeBall.dy * 1.2, combo: 0 };
-                const b2: Ball = { ...activeBall, dx: activeBall.dx * 1.2, dy: activeBall.dy * 0.8, combo: 0 };
-                ballsRef.current.push(b1, b2);
-              }
+              handleBonusEffect(b.x + b.width / 2, b.y + b.height / 2, ball);
             } else if (Math.random() < 0.2) spawnCollectible(b.x + b.width / 2, b.y + b.height / 2);
           }
         }
