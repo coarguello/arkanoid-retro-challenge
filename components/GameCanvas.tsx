@@ -379,7 +379,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
-      // Spawn Enemies occasionally in empty spaces of the map
+      // Spawn Enemies exclusively in the highest empty spaces of the map
       if (levelRef.current > 1) {
         const emptySpaces = [];
         for (let r = 0; r < rows; r++) {
@@ -390,15 +390,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           }
         }
 
+        // Sort spaces by row (top to bottom) to prioritize the highest available gaps
+        emptySpaces.sort((a, b) => a.r - b.r);
+
         const numEnemies = Math.min(Math.floor(levelRef.current / 2), cols);
         
+        // Only select spawn locations from the top-most empty candidates
+        const candidateSpaces = emptySpaces.slice(0, numEnemies * 3);
+
         for (let i = 0; i < numEnemies; i++) {
           let spawnR = -1; // Default to above the map if no empty slots
           let spawnC = i % cols;
 
-          if (emptySpaces.length > 0) {
-            const idx = Math.floor(Math.random() * emptySpaces.length);
-            const slot = emptySpaces.splice(idx, 1)[0];
+          if (candidateSpaces.length > 0) {
+            const idx = Math.floor(Math.random() * candidateSpaces.length);
+            const slot = candidateSpaces.splice(idx, 1)[0];
             spawnR = slot.r;
             spawnC = slot.c;
           }
