@@ -46,6 +46,7 @@ export interface Ball {
   trail?: TrailPart[];
   isFireball?: boolean; // Temporary buff
   styleId?: string; // Equipped style ID
+  combo?: number; // Per-ball combo tracker
 }
 
 export interface Projectile {

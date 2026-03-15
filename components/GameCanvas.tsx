@@ -425,7 +425,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     enemiesRef.current = newEnemies;
   }, []);
   const resetBall = () => {
-    ballsRef.current = [{ x: 300, y: 350, dx: 0, dy: 0, radius: 8, launched: false, trail: [] }];
+    ballsRef.current = [{ x: 300, y: 350, dx: 0, dy: 0, radius: 8, launched: false, trail: [], combo: 0 }];
+    comboRef.current = 0; // Keeping global combo ref for projectiles only
   };
 
   const resetState = useCallback(() => {
@@ -941,7 +942,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         if (minOverlap === overlapTop && ball.dy > 0) {
           // Hit the top of the paddle
           ball.y = paddleRef.current.y - ball.radius; // Cleanly snaps to top
-          comboRef.current = 0; // Reset combo when bouncing on paddle
+          ball.combo = 0; // Reset combo when bouncing on paddle
           const hitPos = (ball.x - (paddleRef.current.x + paddleRef.current.width / 2)) / (paddleRef.current.width / 2);
           const angle = hitPos * (Math.PI / 3);
           ball.dx = Math.sin(angle) * currentSpeedRef.current;
@@ -967,7 +968,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           // CRITICAL: In Arkanoid, saving with the edge should still bounce the ball UP to save the player
           if (ball.dy > 0) {
             ball.dy = -Math.abs(ball.dy);
-            comboRef.current = 0;
+            ball.combo = 0;
             paddleRef.current.flash = 0.5;
           }
           playSound('paddle');
@@ -979,7 +980,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           // Send it upwards to save the player
           if (ball.dy > 0) {
             ball.dy = -Math.abs(ball.dy);
-            comboRef.current = 0;
+            ball.combo = 0;
             paddleRef.current.flash = 0.5;
           }
           playSound('paddle');
@@ -1025,8 +1026,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
               createParticles(ball.x, ball.y, '#9ca3af', 5, true); // Debris
               if (b.hp <= 0) {
                 b.active = false;
-                comboRef.current++;
-                const mult = Math.min(comboRef.current, 5);
+                // Add Score
+                ball.combo = (ball.combo || 0) + 1;
+                const mult = Math.min(ball.combo, 5);
                 const score = 150 * mult;
                 onScoreUpdateRef.current(score);
                 addFeedbackText(`+${score}`, b.x + b.width / 2, b.y, mult > 1 ? '#a855f7' : '#9ca3af');
@@ -1035,8 +1037,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             }
           } else {
             b.active = false;
-            comboRef.current++;
-            const mult = Math.min(comboRef.current, 5);
+            ball.combo = (ball.combo || 0) + 1;
+            const mult = Math.min(ball.combo, 5);
             const score = 100 * mult;
             onScoreUpdateRef.current(score);
             addFeedbackText(`+${score}`, b.x + b.width / 2, b.y, mult > 1 ? '#a855f7' : '#60a5fa');
@@ -1047,8 +1049,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
             createParticles(b.x + b.width / 2, b.y + b.height / 2, debrisColor, 10, true);
             playSound('brick');
-            if (b.type === 'BONUS') handleBonusEffect(b.x + b.width / 2, b.y + b.height / 2);
-            else if (Math.random() < 0.2) spawnCollectible(b.x + b.width / 2, b.y + b.height / 2);
+            if (b.type === 'BONUS') {
+              // Determine spawn location (from active ball)
+              const activeBall = ballsRef.current.find(b => b.launched);
+              if (activeBall) {
+                const b1: Ball = { ...activeBall, dx: activeBall.dx * 0.8, dy: activeBall.dy * 1.2, combo: 0 };
+                const b2: Ball = { ...activeBall, dx: activeBall.dx * 1.2, dy: activeBall.dy * 0.8, combo: 0 };
+                ballsRef.current.push(b1, b2);
+              }
+            } else if (Math.random() < 0.2) spawnCollectible(b.x + b.width / 2, b.y + b.height / 2);
           }
         }
       });
@@ -1067,8 +1076,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             normalizeBallVelocity(ball);
           }
 
-          comboRef.current++;
-          const mult = Math.min(comboRef.current, 5);
+          ball.combo = (ball.combo || 0) + 1;
+          const mult = Math.min(ball.combo, 5);
           const score = 50 * mult;
           onScoreUpdateRef.current(score);
           addFeedbackText(`+${score}`, enemy.x + enemy.width / 2, enemy.y, mult > 1 ? '#a855f7' : '#f59e0b');
@@ -1104,8 +1113,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             boss.hp--;
             boss.invulnerableTimer = 15; // Brief invulnerability window to prevent instant-death overlaps
 
-            comboRef.current++;
-            const mult = Math.min(comboRef.current, 5);
+            ball.combo = (ball.combo || 0) + 1;
+            const mult = Math.min(ball.combo, 5);
             const score = 200 * mult;
             onScoreUpdateRef.current(score);
             addFeedbackText(`+${score}`, boss.x + boss.width / 2, boss.y, mult > 1 ? '#a855f7' : '#f87171');
