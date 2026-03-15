@@ -379,17 +379,33 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
-      // Spawn Enemies occasionally on upper part
+      // Spawn Enemies occasionally in empty spaces of the map
       if (levelRef.current > 1) {
+        const emptySpaces = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (!BRICK_MAP[levelMap[r][c]]) {
+              emptySpaces.push({ r, c });
+            }
+          }
+        }
+
         const numEnemies = Math.min(Math.floor(levelRef.current / 2), cols);
-        const availableCols = Array.from({ length: cols }, (_, i) => i);
+        
         for (let i = 0; i < numEnemies; i++) {
-          if (availableCols.length === 0) break;
-          const idx = Math.floor(Math.random() * availableCols.length);
-          const col = availableCols.splice(idx, 1)[0];
+          let spawnR = -1; // Default to above the map if no empty slots
+          let spawnC = i % cols;
+
+          if (emptySpaces.length > 0) {
+            const idx = Math.floor(Math.random() * emptySpaces.length);
+            const slot = emptySpaces.splice(idx, 1)[0];
+            spawnR = slot.r;
+            spawnC = slot.c;
+          }
+
           newEnemies.push({
-            x: col * (bW + pad) + offsetLeft + (bW - 30) / 2,
-            y: 0 * (bH + pad) + offsetTop, // Top row area
+            x: spawnC * (bW + pad) + offsetLeft + (bW - 30) / 2,
+            y: spawnR * (bH + pad) + offsetTop,
             width: 30, height: 22,
             dx: (Math.random() > 0.5 ? 1.5 : -1.5) * (1 + levelRef.current * 0.1),
             active: true,
