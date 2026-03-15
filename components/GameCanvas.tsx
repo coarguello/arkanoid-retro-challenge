@@ -665,10 +665,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         c.active = false;
         clearPaddleEffect();
         if (Math.random() < 0.5) {
-          paddleRef.current.targetWidth = 60;
+          paddleRef.current.targetWidth = Math.max(20, paddleRef.current.targetWidth - 40);
           addFeedbackText("¡CASTIGO!", paddleRef.current.x + paddleRef.current.width / 2, paddleRef.current.y - 15, "#ef4444");
         } else {
-          paddleRef.current.targetWidth = 160;
+          paddleRef.current.targetWidth = Math.min(250, paddleRef.current.targetWidth + 60);
           addFeedbackText("¡BENDICIÓN!", paddleRef.current.x + paddleRef.current.width / 2, paddleRef.current.y - 15, "#4ade80");
         }
         paddleEffectTimeoutRef.current = window.setTimeout(() => {
