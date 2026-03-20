@@ -1051,23 +1051,23 @@ const App: React.FC = () => {
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
-            <div className="mb-6 relative shrink-0">
-              <span className="text-7xl animate-bounce block">🕹️</span>
-            </div>
-
-            <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
+            <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl mt-8">
               ARKANOID
             </h1>
             <p className="text-[8px] text-blue-400/50 mb-10 tracking-[0.3em]">BATTLE ARCADE SYSTEM</p>
 
             <div className="flex flex-col gap-2 w-full max-w-xs z-10">
-              <button
-                onClick={startGame}
-                className="group relative w-full px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
-              >
-                <span className="relative z-10 text-xl tracking-wider drop-shadow-md">JUGAR</span>
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
-              </button>
+              <div className="flex items-center gap-4 w-full justify-center mb-2">
+                <span className="text-4xl animate-bounce shrink-0 drop-shadow-xl">🕹️</span>
+                <button
+                  onClick={startGame}
+                  className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
+                >
+                  <span className="relative z-10 text-xl tracking-wider drop-shadow-md">JUGAR</span>
+                  <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                </button>
+                <span className="text-4xl animate-bounce shrink-0 drop-shadow-xl" style={{ animationDelay: '0.2s' }}>🕹️</span>
+              </div>
 
               {currentUser && (
                 <button
