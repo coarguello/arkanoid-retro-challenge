@@ -1072,9 +1072,9 @@ const App: React.FC = () => {
                   </svg>
                   <button
                     onClick={startGame}
-                    className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
+                    className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden flex items-center justify-center"
                   >
-                    <span className="relative z-10 text-xl tracking-wider drop-shadow-md pl-1">JUGAR</span>
+                    <span className="relative z-10 text-xl drop-shadow-md text-center">JUGAR</span>
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
                   </button>
                   <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]" style={{ animationDelay: '0.2s' }}>
