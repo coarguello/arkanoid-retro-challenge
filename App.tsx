@@ -77,6 +77,7 @@ const App: React.FC = () => {
 
   const [discountedItemId, setDiscountedItemId] = useState<string | null>(null);
   const [gachaReward, setGachaReward] = useState<ShopItem | null>(null);
+  const [isGachaDuplicate, setIsGachaDuplicate] = useState(false);
   const [isGachaRolling, setIsGachaRolling] = useState(false);
 
   useEffect(() => {
@@ -633,16 +634,16 @@ const App: React.FC = () => {
     setInventory(currentInv => {
       if (currentInv.coins < 500) return currentInv;
 
-      // Filter items player doesn't have yet. Don't drop boss items if boss is undefeated.
-      const lockedItems = SHOP_ITEMS.filter(it =>
-        !currentInv.unlockedIds.includes(it.id) &&
-        (it.unlockCondition !== 'boss_kill' || currentInv.isBossDefeated)
+      // Filter available items (allow duplicates, but respect boss requirement)
+      const availableItems = SHOP_ITEMS.filter(it =>
+        it.unlockCondition !== 'boss_kill' || currentInv.isBossDefeated
       );
 
-      if (lockedItems.length === 0) return currentInv;
+      if (availableItems.length === 0) return currentInv;
 
       setIsGachaRolling(true);
       setGachaReward(null);
+      setIsGachaDuplicate(false);
 
       // Take coins immediately
       const newInv = { ...currentInv, coins: currentInv.coins - 500 };
@@ -650,17 +651,41 @@ const App: React.FC = () => {
 
       // Simulate roulette delay
       setTimeout(() => {
-        const randomReward = lockedItems[Math.floor(Math.random() * lockedItems.length)];
+        // Weighted random drop table
+        const weightedItems = availableItems.map(it => ({
+          item: it,
+          weight: Math.max(1, 10000 / (it.price + 100))
+        }));
+        
+        const totalWeight = weightedItems.reduce((acc, curr) => acc + curr.weight, 0);
+        let randomNum = Math.random() * totalWeight;
+        
+        let randomReward = availableItems[0];
+        for (const wItem of weightedItems) {
+            randomNum -= wItem.weight;
+            if (randomNum <= 0) {
+                randomReward = wItem.item;
+                break;
+            }
+        }
+
         setGachaReward(randomReward);
         setIsGachaRolling(false);
 
         setInventory(latestInv => {
-          if (!latestInv.unlockedIds.includes(randomReward.id)) {
+          const isDuplicate = latestInv.unlockedIds.includes(randomReward.id);
+          setIsGachaDuplicate(isDuplicate);
+
+          if (!isDuplicate) {
             const finalInv = { ...latestInv, unlockedIds: [...latestInv.unlockedIds, randomReward.id] };
             localStorage.setItem('arkanoid_inventory', JSON.stringify(finalInv));
             return finalInv;
+          } else {
+            // Give a 100 coin consolation refund for duplicates
+            const refundInv = { ...latestInv, coins: latestInv.coins + 100 };
+            localStorage.setItem('arkanoid_inventory', JSON.stringify(refundInv));
+            return refundInv;
           }
-          return latestInv;
         });
       }, 2000);
 
@@ -740,10 +765,15 @@ const App: React.FC = () => {
                     </p>
 
                     {gachaReward && !isGachaRolling && (
-                      <div className="mb-8 p-6 bg-zinc-950/80 border border-emerald-500/30 rounded-xl animate-in zoom-in duration-500 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-                        <span className="text-xs text-emerald-400 uppercase tracking-widest block mb-2 font-black animate-pulse">¡Has obtenido!</span>
+                      <div className={`mb-8 p-6 bg-zinc-950/80 border rounded-xl animate-in zoom-in duration-500 shadow-[0_0_30px_rgba(16,185,129,0.2)] ${isGachaDuplicate ? 'border-yellow-500/30 shadow-[0_0_30px_rgba(234,179,8,0.2)]' : 'border-emerald-500/30'}`}>
+                        <span className={`text-xs uppercase tracking-widest block mb-2 font-black animate-pulse ${isGachaDuplicate ? 'text-yellow-500' : 'text-emerald-400'}`}>
+                          {isGachaDuplicate ? '¡OBJETO DUPLICADO!' : '¡HAS OBTENIDO!'}
+                        </span>
                         <h4 className="text-2xl font-black text-white">{gachaReward.name}</h4>
                         <p className="text-zinc-500 text-xs mt-1">({gachaReward.type}) Valor original: {gachaReward.price} 🪙</p>
+                        {isGachaDuplicate && (
+                           <p className="text-yellow-400 text-sm mt-3 font-bold bg-yellow-900/40 py-1 px-3 rounded inline-block border border-yellow-700">Reembolso compensatorio: +100 🪙</p>
+                        )}
                       </div>
                     )}
 
