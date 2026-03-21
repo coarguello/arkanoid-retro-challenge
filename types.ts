@@ -136,7 +136,7 @@ export interface ShopItem {
   price: number;
   colorPrimary: string;
   colorSecondary?: string;
-  effectType?: 'none' | 'glow' | 'pulse' | 'fire' | 'rainbow' | 'synthwave' | 'matrix' | 'ocean' | 'blackhole' | 'ice' | 'pixel';
+  effectType?: 'glow' | 'none' | 'pulse' | 'fire' | 'rainbow' | 'synthwave' | 'matrix' | 'ocean' | 'blackhole' | 'ice' | 'pixel' | 'ghost' | 'hyperdrive';
   unlockCondition?: 'boss_kill';
 }
 

@@ -980,6 +980,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (equippedPaddle === 'paddle_neon') sparkColor = '#f472b6';
           if (equippedPaddle === 'paddle_gold') sparkColor = '#fde047';
           if (equippedPaddle === 'paddle_lava') sparkColor = '#f97316';
+          if (equippedPaddle === 'paddle_rainbow') sparkColor = `hsl(${(Date.now() / 10) % 360}, 100%, 60%)`;
+          if (equippedPaddle === 'paddle_ghost') sparkColor = 'rgba(255, 255, 255, 0.3)';
           if (equippedPaddle === 'paddle_plasma') sparkColor = '#ffffff';
 
           createParticles(ball.x, ball.y + ball.radius, sparkColor, 15);
@@ -1226,13 +1228,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (equippedBg === 'bg_synthwave') bgColor = '#1e1b4b';
     if (equippedBg === 'bg_matrix') bgColor = '#022c22';
     if (equippedBg === 'bg_ocean') bgColor = '#0f172a';
-    if (equippedBg === 'bg_blackhole') bgColor = '#000000'; // Pure black for space
+    if (equippedBg === 'bg_blackhole' || equippedBg === 'bg_hyperdrive') bgColor = '#000000'; // Pure black for space
 
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, GAME_W, GAME_H);
 
     // 2. Stars (only for space-themed backgrounds)
-    if (equippedBg !== 'bg_matrix' && equippedBg !== 'bg_ocean') {
+    if (equippedBg !== 'bg_matrix' && equippedBg !== 'bg_ocean' && equippedBg !== 'bg_pixel' && equippedBg !== 'bg_hyperdrive') {
       ctx.fillStyle = equippedBg === 'bg_blood' ? '#fca5a5' : equippedBg === 'bg_synthwave' ? '#f472b6' : 'white';
       if (equippedBg === 'bg_blackhole') ctx.fillStyle = '#c4b5fd'; // Light purple stars for blackhole
       starsRef.current.forEach(star => {
@@ -1291,6 +1293,22 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
              }
         }
       }
+      ctx.globalAlpha = 1.0;
+    }
+    else if (equippedBg === 'bg_hyperdrive') {
+      ctx.fillStyle = '#ffffff';
+      const speed = 25; // Warp speed
+      starsRef.current.forEach(star => {
+         const length = star.size * speed; // streak length
+         ctx.globalAlpha = star.alpha;
+         ctx.fillRect(star.x, star.y, star.size, length);
+         // Simulate fast movement downwards
+         star.y += speed;
+         if (star.y > GAME_H) {
+             star.y = -length;
+             star.x = Math.random() * GAME_W;
+         }
+      });
       ctx.globalAlpha = 1.0;
     }
     else if (equippedBg === 'bg_ocean') {
@@ -1376,6 +1394,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (equippedPaddle === 'paddle_neon') { pColorPrimary = '#ec4899'; pColorSecondary = '#06b6d4'; effectType = 'synthwave'; }
     if (equippedPaddle === 'paddle_gold') { pColorPrimary = '#fbbf24'; effectType = 'glow'; }
     if (equippedPaddle === 'paddle_lava') { pColorPrimary = '#ea580c'; pColorSecondary = '#dc2626'; effectType = 'synthwave'; }
+    if (equippedPaddle === 'paddle_rainbow') { pColorPrimary = `hsl(${(Date.now() / 20) % 360}, 100%, 50%)`; effectType = 'rainbow'; }
+    if (equippedPaddle === 'paddle_ghost') { pColorPrimary = 'rgba(209, 213, 219, 0.2)'; effectType = 'ghost'; }
     if (equippedPaddle === 'paddle_plasma') { pColorPrimary = '#cbd5e1'; effectType = 'glow'; }
 
     // Set shadows
@@ -1392,6 +1412,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.fillStyle = ammoRef.current > 0 ? '#fbbf24' : pColorPrimary; // ammo override
     }
 
+    if (effectType === 'ghost') {
+       ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+       ctx.lineWidth = 1;
+       ctx.strokeRect(paddleRef.current.x, paddleRef.current.y, paddleRef.current.width, paddleRef.current.height);
+    }
+    
     ctx.fillRect(paddleRef.current.x, paddleRef.current.y, paddleRef.current.width, paddleRef.current.height);
 
     ctx.shadowBlur = 0; // reset
@@ -1417,6 +1443,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             ctx.fillStyle = `rgba(249, 115, 22, ${ratio * 0.8})`; // Orange/Red trail
           } else if (equippedBall === 'ball_ice') {
             ctx.fillStyle = `rgba(186, 230, 253, ${ratio * 0.9})`; // Light blue trail
+          } else if (equippedBall === 'ball_gold') {
+             ctx.fillStyle = `rgba(250, 204, 21, ${ratio * 0.9})`; // Gold trail
+          } else if (equippedBall === 'ball_ghost') {
+             ctx.fillStyle = `rgba(255, 255, 255, ${ratio * 0.15})`; // Very faint trail
           } else if (equippedBall === 'ball_void') {
             ctx.fillStyle = `rgba(0, 0, 0, ${ratio * 0.9})`; // Dark matter trail
           } else {
@@ -1443,16 +1473,20 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
       if (ball.isFireball || equippedBall === 'ball_fire') {
         bColor = '#f97316'; // Orange core
-        shadowColor = '#ea580c'; // Darker orange aura
-        blurAmount = 20;
+        shadowColor = '#ef4444'; blurAmount = 15;
       } else if (equippedBall === 'ball_rainbow') {
         bColor = '#ffffff';
         shadowColor = `hsl(${(Date.now() / 5) % 360}, 100%, 60%)`;
         blurAmount = 15;
       } else if (equippedBall === 'ball_void') {
         bColor = '#000000'; // Black hole core
-        shadowColor = '#ffffff'; // White event horizon glow
-        blurAmount = 15;
+        shadowColor = '#4c1d95'; blurAmount = 10;
+      } else if (equippedBall === 'ball_gold') {
+        bColor = '#facc15';
+        shadowColor = '#ca8a04'; blurAmount = 15;
+      } else if (equippedBall === 'ball_ghost') {
+        bColor = 'rgba(255, 255, 255, 0.2)';
+        // The stroke for ghost ball is handled after fill, so no ctx.stroke() here
       } else {
         bColor = '#ffffff'; // Plasma base
         shadowColor = '#93c5fd';
@@ -1467,6 +1501,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       if (equippedBall === 'ball_void') {
         ctx.strokeStyle = '#ffffff'; // thin white edge to define the black void sphere
         ctx.lineWidth = 1.5;
+        ctx.stroke();
+      } else if (equippedBall === 'ball_ghost') {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
 
