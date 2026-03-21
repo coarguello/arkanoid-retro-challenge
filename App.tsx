@@ -772,7 +772,7 @@ const App: React.FC = () => {
                           {isGachaDuplicate ? '¡OBJETO DUPLICADO!' : '¡HAS OBTENIDO!'}
                         </span>
                         <h4 className="text-2xl font-black text-white">{gachaReward.name}</h4>
-                        <p className="text-zinc-500 text-xs mt-1">({gachaReward.type}) Valor original: {gachaReward.price} 🪙</p>
+                        <p className="text-zinc-500 text-xs mt-1">({gachaReward.type === 'paddle' ? 'barra' : gachaReward.type === 'ball' ? 'pelota' : 'fondo'}) Valor original: {gachaReward.price} 🪙</p>
                         {isGachaDuplicate && (
                            <p className="text-yellow-400 text-sm mt-3 font-bold bg-yellow-900/40 py-1 px-3 rounded inline-block border border-yellow-700">Reembolso compensatorio: +100 🪙</p>
                         )}
