@@ -1046,38 +1046,44 @@ const App: React.FC = () => {
       {/* Menu Screen */}
       {
         gameState === GameState.MENU && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black p-4 py-8 overflow-y-auto text-center">
+          <div className="absolute inset-0 z-50 flex flex-col items-center bg-black overflow-y-auto text-center">
 
             {/* Top User Badge Moved to HUD to prevent cutoff */}
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
-            <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl mt-16 pt-4">
-              ARKANOID
-            </h1>
-            <p className="text-[8px] text-blue-400/50 mb-10 tracking-[0.3em]">BATTLE ARCADE SYSTEM</p>
+            <div className="flex flex-col items-center justify-center w-full min-h-full py-16 my-auto z-10 max-w-xs">
+              <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
+                ARKANOID
+              </h1>
+              <p className="text-[8px] text-blue-400/50 mb-10 tracking-[0.3em] whitespace-nowrap">BATTLE ARCADE SYSTEM</p>
 
-            <div className="flex flex-col gap-2 w-full max-w-xs z-10">
-              <div className="flex items-center gap-4 w-full justify-center mb-2">
-                <span className="text-4xl animate-bounce shrink-0 drop-shadow-xl">🕹️</span>
-                <button
-                  onClick={startGame}
-                  className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
-                >
-                  <span className="relative z-10 text-xl tracking-wider drop-shadow-md">JUGAR</span>
-                  <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
-                </button>
-                <span className="text-4xl animate-bounce shrink-0 drop-shadow-xl" style={{ animationDelay: '0.2s' }}>🕹️</span>
-              </div>
+              <div className="flex flex-col gap-2 w-full">
+                <div className="flex items-center gap-4 w-full justify-center mb-2">
+                  <svg className="w-10 h-10 animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2a3 3 0 00-3 3c0 1.3.8 2.4 1.9 2.8L9.5 15H6v5h12v-5h-3.5l-1.4-7.2c1.1-.4 1.9-1.5 1.9-2.8a3 3 0 00-3-3m0 2a1 1 0 110 2 1 1 0 010-2M8 17h8v2H8v-2z" />
+                  </svg>
+                  <button
+                    onClick={startGame}
+                    className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
+                  >
+                    <span className="relative z-10 text-xl tracking-wider drop-shadow-md">JUGAR</span>
+                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                  </button>
+                  <svg className="w-10 h-10 animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] text-red-500" style={{ animationDelay: '0.2s' }} viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2a3 3 0 00-3 3c0 1.3.8 2.4 1.9 2.8L9.5 15H6v5h12v-5h-3.5l-1.4-7.2c1.1-.4 1.9-1.5 1.9-2.8a3 3 0 00-3-3m0 2a1 1 0 110 2 1 1 0 010-2M8 17h8v2H8v-2z" />
+                  </svg>
+                </div>
 
-              {currentUser && (
-                <button
-                  onClick={() => setShowShop(true)}
-                  className="w-full px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-yellow-500 font-bold border-2 border-yellow-900/50 hover:border-yellow-500 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
-                >
-                  <span className="text-xl">🛒</span> TIENDA
-                </button>
-              )}
+                {currentUser && (
+                  <button
+                    onClick={() => setShowShop(true)}
+                    className="w-full px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-yellow-500 font-bold border-2 border-yellow-900/50 hover:border-yellow-500 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                  >
+                    <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    TIENDA
+                  </button>
+                )}
 
               {currentUser ? (
                 <button
@@ -1147,6 +1153,7 @@ const App: React.FC = () => {
             </div>
 
             {renderAuthModal()}
+            </div>
           </div>
         )
       }
