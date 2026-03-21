@@ -964,8 +964,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           ball.combo = 0; // Reset combo when bouncing on paddle
           const hitPos = (ball.x - (paddleRef.current.x + paddleRef.current.width / 2)) / (paddleRef.current.width / 2);
           const angle = hitPos * (Math.PI / 3);
-          ball.dx = Math.sin(angle) * currentSpeedRef.current;
-          ball.dy = -Math.cos(angle) * currentSpeedRef.current;
+          
+          const targetSpeed = currentSpeedRef.current * (ball.speedMultiplier || 1);
+          ball.dx = Math.sin(angle) * targetSpeed;
+          ball.dy = -Math.cos(angle) * targetSpeed;
           
           playSound('paddle');
           paddleRef.current.flash = 0.8;
