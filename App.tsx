@@ -926,7 +926,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Center */}
-        <div className="flex flex-col items-center gap-0.5 flex-1">
+        <div className="flex flex-col items-center gap-0.5 flex-1 mt-2">
           {gameState === GameState.PLAYING || gameState === GameState.PAUSED ? (
             <>
               <span className="text-[7px] text-zinc-500 uppercase">Vidas</span>
@@ -936,7 +936,14 @@ const App: React.FC = () => {
                 ))}
               </div>
             </>
-          ) : null}
+          ) : (
+            currentUser && (
+              <div className="flex items-center gap-2 bg-zinc-900/80 border border-blue-900/50 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-in fade-in duration-500">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_8px_theme(colors.emerald.500)]"></span>
+                <span className="text-[9px] text-blue-300 tracking-widest pl-1 truncate max-w-[100px]">{currentUsername || currentUser}</span>
+              </div>
+            )
+          )}
         </div>
 
         {/* Right Side */}
@@ -1041,13 +1048,7 @@ const App: React.FC = () => {
         gameState === GameState.MENU && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black p-4 py-8 overflow-y-auto text-center">
 
-            {/* Top User Badge */}
-            {currentUser && (
-              <div className="mb-6 mt-4 flex items-center gap-2 bg-zinc-900/80 border border-blue-900/50 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-in slide-in-from-top-4 duration-500 z-10 shrink-0">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_8px_theme(colors.emerald.500)]"></span>
-                <span className="text-[10px] text-blue-300 tracking-widest pl-1">{currentUsername || currentUser}</span>
-              </div>
-            )}
+            {/* Top User Badge Moved to HUD to prevent cutoff */}
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
