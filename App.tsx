@@ -634,10 +634,8 @@ const App: React.FC = () => {
     setInventory(currentInv => {
       if (currentInv.coins < 500) return currentInv;
 
-      // Filter available items (allow duplicates, but respect boss requirement)
-      const availableItems = SHOP_ITEMS.filter(it =>
-        it.unlockCondition !== 'boss_kill' || currentInv.isBossDefeated
-      );
+      // All items are in the pool for the Mystery Box, including boss items
+      const availableItems = SHOP_ITEMS;
 
       if (availableItems.length === 0) return currentInv;
 
@@ -652,10 +650,14 @@ const App: React.FC = () => {
       // Simulate roulette delay
       setTimeout(() => {
         // Weighted random drop table
-        const weightedItems = availableItems.map(it => ({
-          item: it,
-          weight: Math.max(1, 10000 / (it.price + 100))
-        }));
+        const weightedItems = availableItems.map(it => {
+          let weight = Math.max(1, 10000 / (it.price + 100));
+          if (it.unlockCondition === 'boss_kill') {
+            // Extremely rare chance for boss items (approx 0.00006% drop rate)
+            weight = 0.00036;
+          }
+          return { item: it, weight };
+        });
         
         const totalWeight = weightedItems.reduce((acc, curr) => acc + curr.weight, 0);
         let randomNum = Math.random() * totalWeight;
