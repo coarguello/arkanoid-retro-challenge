@@ -1046,7 +1046,7 @@ const App: React.FC = () => {
       {/* Menu Screen */}
       {
         gameState === GameState.MENU && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center bg-black overflow-y-auto text-center">
+          <div className="absolute inset-0 z-50 flex flex-col items-center bg-black overflow-y-auto text-center" style={{ paddingLeft: 'calc(100vw - 100%)' }}>
 
             {/* Top User Badge Moved to HUD to prevent cutoff */}
 
@@ -1061,23 +1061,31 @@ const App: React.FC = () => {
               <div className="flex flex-col gap-2 w-full max-w-xs">
                 <div className="flex items-center gap-4 w-full justify-center mb-2">
                   <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
-                    <rect x="16" y="8" width="8" height="8" rx="4" fill="#ef4444" />
-                    <rect x="18" y="16" width="4" height="10" fill="#ef4444" />
-                    <rect x="10" y="26" width="20" height="8" rx="2" fill="#3f3f46" />
-                    <rect x="24" y="28" width="4" height="4" rx="2" fill="#ef4444" />
+                    <rect x="8" y="28" width="24" height="4" rx="2" fill="#18181b" />
+                    <rect x="8" y="24" width="24" height="6" rx="2" fill="#3f3f46" />
+                    <rect x="10" y="25" width="20" height="2" fill="#52525b" />
+                    <path d="M18 14 h4 l1 10 h-6 z" fill="#a1a1aa" />
+                    <path d="M19 14 h2 l0.5 10 h-3 z" fill="#e4e4e7" />
+                    <circle cx="20" cy="10" r="6" fill="#ef4444" />
+                    <circle cx="18" cy="8" r="2" fill="#fca5a5" opacity="0.6" />
+                    <circle cx="28" cy="24" r="2" fill="#ef4444" />
                   </svg>
                   <button
                     onClick={startGame}
                     className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
                   >
-                    <span className="relative z-10 text-xl tracking-wider drop-shadow-md">JUGAR</span>
+                    <span className="relative z-10 text-xl tracking-wider drop-shadow-md pl-1">JUGAR</span>
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
                   </button>
                   <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]" style={{ animationDelay: '0.2s' }}>
-                    <rect x="16" y="8" width="8" height="8" rx="4" fill="#ef4444" />
-                    <rect x="18" y="16" width="4" height="10" fill="#ef4444" />
-                    <rect x="10" y="26" width="20" height="8" rx="2" fill="#3f3f46" />
-                    <rect x="8" y="28" width="4" height="4" rx="2" fill="#ef4444" />
+                    <rect x="8" y="28" width="24" height="4" rx="2" fill="#18181b" />
+                    <rect x="8" y="24" width="24" height="6" rx="2" fill="#3f3f46" />
+                    <rect x="10" y="25" width="20" height="2" fill="#52525b" />
+                    <path d="M18 14 h4 l1 10 h-6 z" fill="#a1a1aa" />
+                    <path d="M19 14 h2 l0.5 10 h-3 z" fill="#e4e4e7" />
+                    <circle cx="20" cy="10" r="6" fill="#ef4444" />
+                    <circle cx="18" cy="8" r="2" fill="#fca5a5" opacity="0.6" />
+                    <circle cx="28" cy="24" r="2" fill="#ef4444" />
                   </svg>
                 </div>
 
