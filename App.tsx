@@ -537,19 +537,24 @@ const App: React.FC = () => {
     { id: 'paddle_blue', type: 'paddle', name: 'Zafiro', description: 'Azul cristalino', price: 50, colorPrimary: '#3b82f6' },
     { id: 'paddle_toxic', type: 'paddle', name: 'Tóxica', description: 'Emitiendo radiación gamma', price: 150, colorPrimary: '#10b981', effectType: 'glow' },
     { id: 'paddle_neon', type: 'paddle', name: 'Cyberpunk', description: 'Directo del 2077', price: 300, colorPrimary: '#ec4899', colorSecondary: '#06b6d4', effectType: 'synthwave' },
-    { id: 'paddle_plasma', type: 'paddle', name: 'Plasma de la Máquina', description: 'Forjada con restos del Jefe', price: 2000, colorPrimary: '#cbd5e1', effectType: 'glow', unlockCondition: 'boss_kill' },
+    { id: 'paddle_gold', type: 'paddle', name: 'Oro Puro', description: 'Forjada en oro macizo', price: 800, colorPrimary: '#fbbf24', effectType: 'glow' },
+    { id: 'paddle_lava', type: 'paddle', name: 'Río de Magma', description: 'Cuidado que quema', price: 1200, colorPrimary: '#ea580c', colorSecondary: '#dc2626', effectType: 'synthwave' },
+    { id: 'paddle_plasma', type: 'paddle', name: 'Plasma de la Máquina', description: 'Fabricada con restos del Jefe', price: 2000, colorPrimary: '#cbd5e1', effectType: 'glow', unlockCondition: 'boss_kill' },
 
     { id: 'ball_default', type: 'ball', name: 'Plasma Base', description: 'Núcleo de plasma inestable', price: 0, colorPrimary: '#ffffff' },
     { id: 'ball_fire', type: 'ball', name: 'Meteorito', description: 'Dejando un rastro de llamas', price: 200, colorPrimary: '#f97316', effectType: 'fire' },
-    { id: 'ball_rainbow', type: 'ball', name: 'Prisma Arcoíris', description: 'Todos los colores a la vez', price: 500, colorPrimary: '#ffffff', effectType: 'rainbow' },
-    { id: 'ball_void', type: 'ball', name: 'Esfera del Vacío', description: 'Absorbe la luz (Poder del Jefe)', price: 3000, colorPrimary: '#000000', effectType: 'glow', unlockCondition: 'boss_kill' },
+    { id: 'ball_ice', type: 'ball', name: 'Cometa de Hielo', description: 'Congela el espacio vacío', price: 400, colorPrimary: '#38bdf8', effectType: 'ice' },
+    { id: 'ball_rainbow', type: 'ball', name: 'Prisma Arcoíris', description: 'Dibuja con luces prismáticas', price: 800, colorPrimary: '#ffffff', effectType: 'rainbow' },
+    { id: 'ball_void', type: 'ball', name: 'Esfera del Vacío', description: 'Absorbe la luz absoluta', price: 3000, colorPrimary: '#000000', effectType: 'glow', unlockCondition: 'boss_kill' },
 
     { id: 'bg_default', type: 'background', name: 'Grid Espacial', description: 'Clásico vacío holográfico', price: 0, colorPrimary: '#000000' },
-    { id: 'bg_blood', type: 'background', name: 'Nebulosa Roja', description: 'Peligro en espacio profundo', price: 1000, colorPrimary: '#450a0a' },
-    { id: 'bg_matrix', type: 'background', name: 'Sistema Matrix', description: 'Flujo de datos de la antigua red', price: 2500, colorPrimary: '#064e3b', effectType: 'matrix' },
-    { id: 'bg_ocean', type: 'background', name: 'Océano Profundo', description: 'Tranquilidad líquida en movimiento', price: 4000, colorPrimary: '#1e3a8a', effectType: 'ocean' },
+    { id: 'bg_deepspace', type: 'background', name: 'Espacio Profundo', description: 'Silencio y polvo estelar', price: 300, colorPrimary: '#020617' },
+    { id: 'bg_blood', type: 'background', name: 'Nebulosa Roja', description: 'Peligro en la constelación', price: 1000, colorPrimary: '#450a0a' },
+    { id: 'bg_matrix', type: 'background', name: 'Sistema Matrix', description: 'Flujo de datos de la red', price: 2500, colorPrimary: '#064e3b', effectType: 'matrix' },
+    { id: 'bg_ocean', type: 'background', name: 'Océano Profundo', description: 'Mareas cósmicas celestiales', price: 4000, colorPrimary: '#1e3a8a', effectType: 'ocean' },
+    { id: 'bg_pixel', type: 'background', name: 'Carrera Glitch', description: 'Volando por túneles de 8-bits', price: 5000, colorPrimary: '#000000', effectType: 'pixel' },
     { id: 'bg_blackhole', type: 'background', name: 'Horizonte de Eventos', description: 'El núcleo de la Creación', price: 6500, colorPrimary: '#2e1065', effectType: 'blackhole', unlockCondition: 'boss_kill' },
-    { id: 'bg_synthwave', type: 'background', name: 'NEON SYNTHWAVE', description: 'El fondo supremo animado', price: 10000, colorPrimary: '#1e1b4b', effectType: 'synthwave' },
+    { id: 'bg_synthwave', type: 'background', name: 'NEON SYNTHWAVE', description: 'El paisaje retro supremo', price: 10000, colorPrimary: '#1e1b4b', effectType: 'synthwave' },
   ];
 
   const getPrice = (item: ShopItem) => {

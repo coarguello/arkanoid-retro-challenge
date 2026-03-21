@@ -978,6 +978,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (equippedPaddle === 'paddle_blue') sparkColor = '#93c5fd';
           if (equippedPaddle === 'paddle_toxic') sparkColor = '#6ee7b7';
           if (equippedPaddle === 'paddle_neon') sparkColor = '#f472b6';
+          if (equippedPaddle === 'paddle_gold') sparkColor = '#fde047';
+          if (equippedPaddle === 'paddle_lava') sparkColor = '#f97316';
           if (equippedPaddle === 'paddle_plasma') sparkColor = '#ffffff';
 
           createParticles(ball.x, ball.y + ball.radius, sparkColor, 15);
@@ -1219,6 +1221,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // 1. Base color fill
     let bgColor = '#000000';
+    if (equippedBg === 'bg_deepspace') bgColor = '#020617';
     if (equippedBg === 'bg_blood') bgColor = '#1c0505';
     if (equippedBg === 'bg_synthwave') bgColor = '#1e1b4b';
     if (equippedBg === 'bg_matrix') bgColor = '#022c22';
@@ -1268,6 +1271,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         for (let j = 0; j < 5; j++) {
           ctx.globalAlpha = 1 - (j * 0.2); // fade out tail
           ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), i, (yOffset - (j * 15) + GAME_H) % GAME_H);
+        }
+      }
+      ctx.globalAlpha = 1.0;
+    }
+    else if (equippedBg === 'bg_pixel') {
+      const hueBase = (now / 20) % 360;
+      ctx.fillStyle = `hsl(${hueBase}, 100%, 5%)`;
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+      
+      const blockSize = 60;
+      const offset = (now / 15) % blockSize;
+      for(let x = 0; x < GAME_W; x += blockSize) {
+        for(let y = -blockSize; y < GAME_H; y += blockSize) {
+             if ((x * 13 + y * 7) % 5 === 0) {
+               ctx.globalAlpha = 0.15;
+               ctx.fillStyle = `hsl(${(hueBase + x/2 + y/2) % 360}, 80%, 50%)`;
+               ctx.fillRect(x, y + offset, blockSize, blockSize);
+             }
         }
       }
       ctx.globalAlpha = 1.0;
@@ -1353,6 +1374,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     if (equippedPaddle === 'paddle_blue') pColorPrimary = '#3b82f6';
     if (equippedPaddle === 'paddle_toxic') { pColorPrimary = '#10b981'; effectType = 'glow'; }
     if (equippedPaddle === 'paddle_neon') { pColorPrimary = '#ec4899'; pColorSecondary = '#06b6d4'; effectType = 'synthwave'; }
+    if (equippedPaddle === 'paddle_gold') { pColorPrimary = '#fbbf24'; effectType = 'glow'; }
+    if (equippedPaddle === 'paddle_lava') { pColorPrimary = '#ea580c'; pColorSecondary = '#dc2626'; effectType = 'synthwave'; }
     if (equippedPaddle === 'paddle_plasma') { pColorPrimary = '#cbd5e1'; effectType = 'glow'; }
 
     // Set shadows
@@ -1392,6 +1415,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
             ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${ratio * 0.8})`;
           } else if (equippedBall === 'ball_fire' || ball.isFireball) {
             ctx.fillStyle = `rgba(249, 115, 22, ${ratio * 0.8})`; // Orange/Red trail
+          } else if (equippedBall === 'ball_ice') {
+            ctx.fillStyle = `rgba(186, 230, 253, ${ratio * 0.9})`; // Light blue trail
           } else if (equippedBall === 'ball_void') {
             ctx.fillStyle = `rgba(0, 0, 0, ${ratio * 0.9})`; // Dark matter trail
           } else {
