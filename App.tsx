@@ -1052,15 +1052,20 @@ const App: React.FC = () => {
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
-            <div className="flex flex-col items-center justify-start w-full min-h-screen pt-24 pb-8 z-10 max-w-xs mx-auto">
+            <div className="flex flex-col items-center justify-start w-full min-h-screen pt-32 pb-8 z-10 mx-auto">
               <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
                 ARKANOID
               </h1>
               <p className="text-[8px] text-blue-400/50 mb-10 tracking-[0.3em] whitespace-nowrap">BATTLE ARCADE SYSTEM</p>
 
-              <div className="flex flex-col gap-2 w-full">
+              <div className="flex flex-col gap-2 w-full max-w-xs">
                 <div className="flex items-center gap-4 w-full justify-center mb-2">
-                  <span className="text-4xl animate-bounce shrink-0 drop-shadow-xl text-blue-500">🕹️</span>
+                  <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                    <rect x="16" y="8" width="8" height="8" rx="4" fill="#ef4444" />
+                    <rect x="18" y="16" width="4" height="10" fill="#ef4444" />
+                    <rect x="10" y="26" width="20" height="8" rx="2" fill="#3f3f46" />
+                    <rect x="24" y="28" width="4" height="4" rx="2" fill="#ef4444" />
+                  </svg>
                   <button
                     onClick={startGame}
                     className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden"
@@ -1068,7 +1073,12 @@ const App: React.FC = () => {
                     <span className="relative z-10 text-xl tracking-wider drop-shadow-md">JUGAR</span>
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
                   </button>
-                  <span className="text-4xl animate-bounce shrink-0 drop-shadow-xl text-blue-500" style={{ animationDelay: '0.2s' }}>🕹️</span>
+                  <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]" style={{ animationDelay: '0.2s' }}>
+                    <rect x="16" y="8" width="8" height="8" rx="4" fill="#ef4444" />
+                    <rect x="18" y="16" width="4" height="10" fill="#ef4444" />
+                    <rect x="10" y="26" width="20" height="8" rx="2" fill="#3f3f46" />
+                    <rect x="8" y="28" width="4" height="4" rx="2" fill="#ef4444" />
+                  </svg>
                 </div>
 
                 {currentUser && (
@@ -1076,7 +1086,12 @@ const App: React.FC = () => {
                     onClick={() => setShowShop(true)}
                     className="w-full px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-yellow-500 font-bold border-2 border-yellow-900/50 hover:border-yellow-500 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
                   >
-                    <span className="text-xl">🛒</span> TIENDA
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                    TIENDA
                   </button>
                 )}
 
