@@ -1094,7 +1094,7 @@ const App: React.FC = () => {
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
-            <div className="flex flex-col items-center justify-start w-full min-h-screen pt-32 pb-8 z-10 mx-auto">
+            <div className="flex flex-col items-center justify-center w-full min-h-[100dvh] py-4 md:py-8 z-10 mx-auto">
               <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
                 ARKANOID
               </h1>
@@ -1197,7 +1197,7 @@ const App: React.FC = () => {
               )}
             </div>
 
-            <div className="mt-12 flex gap-8 text-[7px] text-zinc-600 uppercase">
+            <div className="mt-4 md:mt-12 hidden sm:flex gap-8 text-[7px] text-zinc-600 uppercase">
               <div className="text-center">
                 <p className="text-blue-500 mb-1">Mover</p>
                 <p>◀ ▶ Lados</p>
