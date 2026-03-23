@@ -1223,23 +1223,23 @@ const App: React.FC = () => {
         gameState === GameState.GAME_OVER && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-lg p-4 text-center">
             <div className="w-full flex flex-col items-center justify-center">
-              <h1 className="text-4xl md:text-7xl font-bold text-red-600 mb-4 drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]">
+              <h1 className="text-3xl sm:text-4xl md:text-7xl font-bold text-red-600 mb-2 sm:mb-4 drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]">
                 FIN DEL JUEGO
               </h1>
-              <p className="text-lg text-white mb-8 uppercase tracking-widest">
+              <p className="text-sm sm:text-lg text-white mb-4 sm:mb-8 uppercase tracking-widest">
                 Puntos: <span className="text-cyan-400 font-bold">{score}</span>
               </p>
 
-              <div className="flex flex-col gap-3 w-full max-w-xs">
+              <div className="flex flex-col gap-2 sm:gap-3 w-full max-w-[250px] sm:max-w-xs">
                 <button
                   onClick={startGame}
-                  className="px-10 py-5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-lg border-b-8 border-red-900 active:border-b-0 active:translate-y-2 transition-all shadow-xl"
+                  className="px-8 py-3 sm:px-10 sm:py-5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-base sm:text-lg border-b-4 sm:border-b-8 border-red-900 active:border-b-0 active:translate-y-1 sm:active:translate-y-2 transition-all shadow-xl"
                 >
                   REINTENTAR
                 </button>
                 <button
                   onClick={() => setGameState(GameState.MENU)}
-                  className="px-8 py-3 text-zinc-500 hover:text-white transition-colors text-sm uppercase tracking-tighter"
+                  className="px-6 py-2 sm:px-8 sm:py-3 text-zinc-500 hover:text-white transition-colors text-xs sm:text-sm uppercase tracking-tighter"
                 >
                   Menú
                 </button>
