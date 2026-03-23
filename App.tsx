@@ -1223,7 +1223,7 @@ const App: React.FC = () => {
         gameState === GameState.GAME_OVER && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-lg p-4 text-center">
             <div className="w-full flex flex-col items-center justify-center">
-              <h1 className="text-3xl sm:text-4xl md:text-7xl font-bold text-red-600 mb-2 sm:mb-4 drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]">
+              <h1 className="text-xl sm:text-3xl md:text-6xl font-black text-red-600 mb-2 sm:mb-4 drop-shadow-[0_0_20px_rgba(220,38,38,0.5)] whitespace-nowrap">
                 FIN DEL JUEGO
               </h1>
               <p className="text-sm sm:text-lg text-white mb-4 sm:mb-8 uppercase tracking-widest">
