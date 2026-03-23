@@ -1094,15 +1094,15 @@ const App: React.FC = () => {
 
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
-            <div className="flex flex-col items-center justify-center w-full min-h-[100dvh] py-4 md:py-8 z-10 mx-auto">
-              <h1 className="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
+            <div className="flex flex-col items-center justify-center w-full min-h-[100dvh] py-4 md:py-8 z-10 mx-auto overflow-y-auto">
+              <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
                 ARKANOID
               </h1>
-              <p className="text-[8px] text-blue-400/50 mb-10 tracking-[0.3em] whitespace-nowrap">BATTLE ARCADE SYSTEM</p>
+              <p className="text-[8px] text-blue-400/50 mb-4 sm:mb-8 md:mb-10 tracking-[0.3em] whitespace-nowrap">BATTLE ARCADE SYSTEM</p>
 
               <div className="flex flex-col gap-2 w-full max-w-xs">
-                <div className="flex items-center gap-4 w-full justify-center mb-2">
-                  <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                <div className="flex items-center gap-2 sm:gap-4 w-full justify-center mb-2">
+                  <svg width="40" height="40" viewBox="0 0 40 40" className="animate-bounce shrink-0 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] scale-75 sm:scale-100">
                     <rect x="8" y="28" width="24" height="4" rx="2" fill="#18181b" />
                     <rect x="8" y="24" width="24" height="6" rx="2" fill="#3f3f46" />
                     <rect x="10" y="25" width="20" height="2" fill="#52525b" />
@@ -1114,7 +1114,7 @@ const App: React.FC = () => {
                   </svg>
                   <button
                     onClick={startGame}
-                    className="group relative flex-1 px-4 py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden flex items-center justify-center"
+                    className="group relative flex-1 px-4 py-3 sm:py-5 bg-blue-600 hover:bg-blue-500 text-white border-b-8 border-blue-900 active:border-b-0 active:translate-y-2 transition-all rounded-lg overflow-hidden flex items-center justify-center"
                   >
                     <span className="relative z-10 text-xl drop-shadow-md text-center">JUGAR</span>
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
