@@ -962,6 +962,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           // Hit the top of the paddle
           ball.y = paddleRef.current.y - ball.radius; // Cleanly snaps to top
           ball.combo = 0; // Reset combo when bouncing on paddle
+          ball.goldHitsSequence = 0; // Reset streak when safe
           const hitPos = (ball.x - (paddleRef.current.x + paddleRef.current.width / 2)) / (paddleRef.current.width / 2);
           const angle = hitPos * (Math.PI / 3);
           
@@ -994,6 +995,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (ball.dy > 0) {
             ball.dy = -Math.abs(ball.dy);
             ball.combo = 0;
+            ball.goldHitsSequence = 0;
             paddleRef.current.flash = 0.5;
           }
           playSound('paddle');
@@ -1006,6 +1008,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (ball.dy > 0) {
             ball.dy = -Math.abs(ball.dy);
             ball.combo = 0;
+            ball.goldHitsSequence = 0;
             paddleRef.current.flash = 0.5;
           }
           playSound('paddle');
@@ -1013,6 +1016,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       }
 
 
+
+      let bouncedX = false;
+      let bouncedY = false;
+
+      // Anti-trap fail-safe: Only pull the ball down if it is infinitely bouncing against INDESTRUCTIBLE blocks!
+      if ((ball.goldHitsSequence || 0) > 15) {
+         ball.dy += 0.5; 
+      }
 
       bricksRef.current.forEach(b => {
         if (!b.active) return;
@@ -1028,7 +1039,20 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (shouldBounce) {
             const overlapX = Math.min(ball.x + ball.radius - b.x, b.x + b.width - (ball.x - ball.radius));
             const overlapY = Math.min(ball.y + ball.radius - b.y, b.y + b.height - (ball.y - ball.radius));
-            if (overlapX < overlapY) ball.dx *= -1; else ball.dy *= -1;
+            
+            if (overlapX < overlapY) {
+               if (!bouncedX) {
+                 ball.dx *= -1;
+                 bouncedX = true;
+                 ball.x += ball.dx > 0 ? overlapX : -overlapX;
+               }
+            } else {
+               if (!bouncedY) {
+                 ball.dy *= -1;
+                 bouncedY = true;
+                 ball.y += ball.dy > 0 ? overlapY : -overlapY;
+               }
+            }
             normalizeBallVelocity(ball);
           }
 
@@ -1038,12 +1062,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
               playSound('paddle');
             }
           } else if (b.type === 'GOLD') {
+            ball.combo = (ball.combo || 0) + 1; // Count hits on indestructible blocks for the anti-trap loop
+            ball.goldHitsSequence = (ball.goldHitsSequence || 0) + 1;
             if (!b.triggerTimer) { // Cooldown for particle generation to prevent lag when overlapping
               b.triggerTimer = 15;
               playSound('paddle'); // Metallic clink
               createParticles(ball.x, ball.y, '#fbbf24', 5);
             }
           } else if (b.type === 'SILVER') {
+            ball.goldHitsSequence = 0; // Breaking a block resets the trap-sequence
             if (b.hp !== undefined && !b.triggerTimer) {
               b.hp--;
               b.triggerTimer = 10; // Prevent instant 3-hit death from overlap
@@ -1063,6 +1090,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           } else {
             b.active = false;
             ball.combo = (ball.combo || 0) + 1;
+            ball.goldHitsSequence = 0; // Breaking a normal block resets the trap-sequence
             const mult = Math.min(ball.combo, 5);
             const score = 100 * mult;
             onScoreUpdateRef.current(score);
