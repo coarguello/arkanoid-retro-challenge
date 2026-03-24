@@ -657,9 +657,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     // Launching is strictly Spacebar or Touch Action now
     const launch = keysPressed.current[' '] || touchState.current.action;
 
+    // Mobile/Tablet ban check via User-Agent
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     // Rotational logic
     const isLaunched = ballsRef.current.some(b => b.launched);
-    if (isLaunched) {
+    if (isLaunched && !isMobileDevice) {
       const rotRight = keysPressed.current['w'] || keysPressed.current['arrowup'];
       const rotLeft = keysPressed.current['s'] || keysPressed.current['arrowdown'];
       
@@ -670,7 +673,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1;
       }
     } else {
-      paddleRef.current.angle = 0; // Lock to flat when holding balls
+      paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smoothly lock back to flat
     }
 
     if (left && paddleRef.current.x > 5) paddleRef.current.x -= 8;
