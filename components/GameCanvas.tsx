@@ -120,7 +120,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const GAME_W = 600;
   const GAME_H = 400;
 
-  const paddleRef = useRef({ x: 250, y: 370, width: 100, height: 14, flash: 0, targetWidth: 100 });
+  const paddleRef = useRef({ x: 250, y: 370, width: 100, height: 14, flash: 0, targetWidth: 100, angle: 0 });
   const paddleEffectTimeoutRef = useRef<number | null>(null);
   const ballsRef = useRef<(Ball & { trail: TrailPart[] })[]>([]);
   const projectilesRef = useRef<Projectile[]>([]);
@@ -462,7 +462,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     enemyProjectilesRef.current = [];
     ammoRef.current = 0;
     feedbackTextsRef.current = [];
-    paddleRef.current = { x: 250, y: 370, width: 100, height: 14, flash: 0, targetWidth: 100 };
+    paddleRef.current = { x: 250, y: 370, width: 100, height: 14, flash: 0, targetWidth: 100, angle: 0 };
 
     initBricks();
   }, [initBricks]);
@@ -653,7 +653,25 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touchState.current.left;
     const right = keysPressed.current['d'] || keysPressed.current['arrowright'] || touchState.current.right;
-    const launch = keysPressed.current[' '] || keysPressed.current['w'] || keysPressed.current['arrowup'] || touchState.current.action;
+    
+    // Launching is strictly Spacebar or Touch Action now
+    const launch = keysPressed.current[' '] || touchState.current.action;
+
+    // Rotational logic
+    const isLaunched = ballsRef.current.some(b => b.launched);
+    if (isLaunched) {
+      const rotRight = keysPressed.current['w'] || keysPressed.current['arrowup'];
+      const rotLeft = keysPressed.current['s'] || keysPressed.current['arrowdown'];
+      
+      if (rotRight) paddleRef.current.angle = Math.min(paddleRef.current.angle + 0.05, Math.PI / 4); // Max 45 deg right
+      else if (rotLeft) paddleRef.current.angle = Math.max(paddleRef.current.angle - 0.05, -Math.PI / 4); // Max 45 deg left
+      else {
+        // Natural stabilization back to 0 when keys are released
+        paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1;
+      }
+    } else {
+      paddleRef.current.angle = 0; // Lock to flat when holding balls
+    }
 
     if (left && paddleRef.current.x > 5) paddleRef.current.x -= 8;
     if (right && paddleRef.current.x + paddleRef.current.width < GAME_W - 5) paddleRef.current.x += 8;
@@ -947,28 +965,55 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         normalizeBallVelocity(ball);
       }
 
-      // Paddle Collision
-      if (ball.y + ball.radius >= paddleRef.current.y && ball.y - ball.radius <= paddleRef.current.y + paddleRef.current.height &&
-          ball.x + ball.radius >= paddleRef.current.x && ball.x - ball.radius <= paddleRef.current.x + paddleRef.current.width) {
-        
-        const overlapTop = (ball.y + ball.radius) - paddleRef.current.y;
-        const overlapLeft = (ball.x + ball.radius) - paddleRef.current.x;
-        const overlapRight = (paddleRef.current.x + paddleRef.current.width) - (ball.x - ball.radius);
-        
-        // Find which face of the paddle we hit
-        const minOverlap = Math.min(overlapTop, overlapLeft, overlapRight);
+      // --- Advanced Paddle Collision (OBB Matrix Transformation) ---
+      const paddleCenterX = paddleRef.current.x + paddleRef.current.width / 2;
+      const paddleCenterY = paddleRef.current.y + paddleRef.current.height / 2;
 
-        if (minOverlap === overlapTop && ball.dy > 0) {
-          // Hit the top of the paddle
-          ball.y = paddleRef.current.y - ball.radius; // Cleanly snaps to top
-          ball.combo = 0; // Reset combo when bouncing on paddle
-          ball.goldHitsSequence = 0; // Reset streak when safe
-          const hitPos = (ball.x - (paddleRef.current.x + paddleRef.current.width / 2)) / (paddleRef.current.width / 2);
-          const angle = hitPos * (Math.PI / 3);
+      // 1. Translate ball to paddle-local coordinate space
+      const dx = ball.x - paddleCenterX;
+      const dy = ball.y - paddleCenterY;
+
+      // 2. Inverse rotation by paddle angle
+      const cos = Math.cos(-paddleRef.current.angle);
+      const sin = Math.sin(-paddleRef.current.angle);
+      const localX = dx * cos - dy * sin;
+      const localY = dx * sin + dy * cos;
+
+      const halfW = paddleRef.current.width / 2;
+      const halfH = paddleRef.current.height / 2;
+
+      // 3. AABB Collision inside local space
+      if (localY + ball.radius >= -halfH && localY - ball.radius <= halfH &&
+          localX + ball.radius >= -halfW && localX - ball.radius <= halfW) {
+        
+        const overlapTop = (localY + ball.radius) - (-halfH);
+        const overlapBottom = halfH - (localY - ball.radius);
+        const overlapLeft = (localX + ball.radius) - (-halfW);
+        const overlapRight = halfW - (localX - ball.radius);
+        
+        const minOverlap = Math.min(overlapTop, overlapBottom, overlapLeft, overlapRight);
+
+        // Calculate bounce based on local intersection
+        if (minOverlap === overlapTop) {
+          // Bounce off Top Face
+          const localNewY = -halfH - ball.radius; // Push completely out
+          // Transform local safe position back to global space
+          ball.x = paddleCenterX + localX * Math.cos(paddleRef.current.angle) - localNewY * Math.sin(paddleRef.current.angle);
+          ball.y = paddleCenterY + localX * Math.sin(paddleRef.current.angle) + localNewY * Math.cos(paddleRef.current.angle);
+
+          ball.combo = 0;
+          ball.goldHitsSequence = 0;
+
+          // Arkanoid logic: Angle mapping relative to center (scaled from -1 to 1)
+          const hitPos = localX / halfW;
+          const localBounceAngle = hitPos * (Math.PI / 3); // Up to 60 degs locally
+          
+          // Add the paddle's physical rotation to the final true angle vector
+          const finalAngle = localBounceAngle + paddleRef.current.angle;
           
           const targetSpeed = currentSpeedRef.current * (ball.speedMultiplier || 1);
-          ball.dx = Math.sin(angle) * targetSpeed;
-          ball.dy = -Math.cos(angle) * targetSpeed;
+          ball.dx = Math.sin(finalAngle) * targetSpeed;
+          ball.dy = -Math.cos(finalAngle) * targetSpeed;
           
           playSound('paddle');
           paddleRef.current.flash = 0.8;
@@ -986,31 +1031,36 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           if (equippedPaddle === 'paddle_plasma') sparkColor = '#ffffff';
 
           createParticles(ball.x, ball.y + ball.radius, sparkColor, 15);
-        } else if (minOverlap === overlapLeft) {
-          // Bounced off the left side
-          ball.x = paddleRef.current.x - ball.radius;
-          ball.dx = -Math.abs(ball.dx); // Force leftwards
+        } else if (minOverlap === overlapLeft || minOverlap === overlapRight) {
+          // Bounced off lateral sides (left/right)
+          const isLeft = minOverlap === overlapLeft;
+          const localNewX = isLeft ? -halfW - ball.radius : halfW + ball.radius;
           
-          // CRITICAL: In Arkanoid, saving with the edge should still bounce the ball UP to save the player
-          if (ball.dy > 0) {
-            ball.dy = -Math.abs(ball.dy);
-            ball.combo = 0;
-            ball.goldHitsSequence = 0;
-            paddleRef.current.flash = 0.5;
-          }
+          // Re-translate safe position to global
+          ball.x = paddleCenterX + localNewX * Math.cos(paddleRef.current.angle) - localY * Math.sin(paddleRef.current.angle);
+          ball.y = paddleCenterY + localNewX * Math.sin(paddleRef.current.angle) + localY * Math.cos(paddleRef.current.angle);
+
+          // Find orthogonal vector from the side impact
+          const normalAngle = isLeft ? -Math.PI / 2 : Math.PI / 2;
+          const finalAngle = normalAngle + paddleRef.current.angle;
+
+          const targetSpeed = currentSpeedRef.current * (ball.speedMultiplier || 1);
+          ball.dx = Math.sin(finalAngle) * targetSpeed;
+          ball.dy = -Math.cos(finalAngle) * targetSpeed;
+
+          ball.combo = 0;
+          ball.goldHitsSequence = 0;
+          paddleRef.current.flash = 0.5;
           playSound('paddle');
-        } else if (minOverlap === overlapRight) {
-          // Bounced off the right side
-          ball.x = paddleRef.current.x + paddleRef.current.width + ball.radius;
-          ball.dx = Math.abs(ball.dx); // Force rightwards
+        } else if (minOverlap === overlapBottom) {
+          // Rarely hit bottom edge
+          const localNewY = halfH + ball.radius;
+          ball.x = paddleCenterX + localX * Math.cos(paddleRef.current.angle) - localNewY * Math.sin(paddleRef.current.angle);
+          ball.y = paddleCenterY + localX * Math.sin(paddleRef.current.angle) + localNewY * Math.cos(paddleRef.current.angle);
           
-          // Send it upwards to save the player
-          if (ball.dy > 0) {
-            ball.dy = -Math.abs(ball.dy);
-            ball.combo = 0;
-            ball.goldHitsSequence = 0;
-            paddleRef.current.flash = 0.5;
-          }
+          ball.dy = Math.abs(ball.dy); // Force down globally
+          ball.combo = 0;
+          ball.goldHitsSequence = 0;
           playSound('paddle');
         }
       }
@@ -1412,6 +1462,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.globalAlpha = 1.0;
 
     // Paddle
+    ctx.save();
+    const halfW = paddleRef.current.width / 2;
+    const halfH = paddleRef.current.height / 2;
+    ctx.translate(paddleRef.current.x + halfW, paddleRef.current.y + halfH);
+    ctx.rotate(paddleRef.current.angle || 0);
+
     const equippedPaddle = inventoryRef.current?.equipped.paddle;
     let effectType = 'none';
     let pColorPrimary = shipConfig.color;
@@ -1432,7 +1488,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // Fill style (gradient or solid)
     if (effectType === 'synthwave' && pColorSecondary) {
-      const grad = ctx.createLinearGradient(paddleRef.current.x, paddleRef.current.y, paddleRef.current.x + paddleRef.current.width, paddleRef.current.y);
+      const grad = ctx.createLinearGradient(-halfW, -halfH, halfW, -halfH);
       grad.addColorStop(0, pColorPrimary);
       grad.addColorStop(1, pColorSecondary);
       ctx.fillStyle = grad;
@@ -1440,19 +1496,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.fillStyle = ammoRef.current > 0 ? '#fbbf24' : pColorPrimary; // ammo override
     }
 
+    ctx.fillRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
+
     if (effectType === 'ghost') {
-       ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-       ctx.lineWidth = 1;
-       ctx.strokeRect(paddleRef.current.x, paddleRef.current.y, paddleRef.current.width, paddleRef.current.height);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
     }
-    
-    ctx.fillRect(paddleRef.current.x, paddleRef.current.y, paddleRef.current.width, paddleRef.current.height);
 
     ctx.shadowBlur = 0; // reset
     if (paddleRef.current.flash > 0) {
       ctx.fillStyle = `rgba(255, 255, 255, ${paddleRef.current.flash})`;
-      ctx.fillRect(paddleRef.current.x, paddleRef.current.y, paddleRef.current.width, paddleRef.current.height);
+      ctx.fillRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
     }
+
+    ctx.restore();
 
     // Balls & Trails
     const equippedBall = inventoryRef.current?.equipped.ball;
