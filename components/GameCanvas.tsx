@@ -12,7 +12,7 @@ interface GameCanvasProps {
   initialLives: number;
   shipConfig?: ShipConfig;
   inventory?: UserInventory;
-  useVirtualControls?: boolean;
+  useGyroscope?: boolean;
 }
 // Global audio context singleton to prevent browser memory/resource limits from freezing the game
 let sharedAudioCtx: AudioContext | null = null;
@@ -97,7 +97,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   initialLives,
   shipConfig = { color: '#ef4444', shape: 'classic' },
   inventory,
-  useVirtualControls = false
+  useGyroscope = true
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,7 +146,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const transitionTimerRef = useRef(0);
 
   const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [joyPos, setJoyPos] = useState({ x: 0, y: 0 });
 
   const fireProjectile = useCallback(() => {
     if (ammoRef.current > 0) {
@@ -561,22 +560,18 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     };
 
     const onTouchStart = (e: TouchEvent) => {
-      if (useVirtualControls) return; // Let the custom UI handle it
       e.preventDefault();
       const zones = getZones(e.touches);
       touchState.current = zones;
-
       if (zones.action) fireProjectile();
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (useVirtualControls) return;
       e.preventDefault();
       touchState.current = getZones(e.touches);
     };
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (useVirtualControls) return;
       e.preventDefault();
       touchState.current = getZones(e.touches);
     };
@@ -593,67 +588,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       canvas.removeEventListener('touchend', onTouchEnd);
       canvas.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [useVirtualControls, fireProjectile]);
+  }, [fireProjectile]);
 
-  const handleJoy = (e: React.TouchEvent<HTMLDivElement>, active: boolean) => {
-    // If we're ending the touch or there are no touches, reset joystick
-    if (!active || e.touches.length === 0) {
-      setJoyPos({ x: 0, y: 0 });
-      touchState.current.left = false;
-      touchState.current.right = false;
-      return;
-    }
-
-    // We must find the specific touch that is hitting the joystick container.
-    // e.touches contains ALL current touches on the screen.
-    const rect = e.currentTarget.getBoundingClientRect();
-
-    // Find the touch that falls inside this element's bounding box
-    let activeTouch: React.Touch | undefined = undefined;
-    for (let i = 0; i < e.touches.length; i++) {
-      const t = e.touches[i];
-      if (
-        t.clientX >= rect.left && t.clientX <= rect.right &&
-        t.clientY >= rect.top && t.clientY <= rect.bottom
-      ) {
-        activeTouch = t;
-        break;
-      }
-    }
-
-    // Fallback just in case (e.g. they dragged slightly outside but still active)
-    if (!activeTouch) {
-      activeTouch = e.touches[0];
-    }
-
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    const dx = activeTouch.clientX - centerX;
-    const dy = activeTouch.clientY - centerY;
-
-    const maxR = rect.width / 2 - 32;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist > maxR) {
-      setJoyPos({ x: (dx / dist) * maxR, y: (dy / dist) * maxR });
-    } else {
-      setJoyPos({ x: dx, y: dy });
-    }
-
-    // Set movement direction based on dx relative to the center
-    const deadzone = 10;
-    if (dx < -deadzone) {
-      touchState.current.left = true;
-      touchState.current.right = false;
-    } else if (dx > deadzone) {
-      touchState.current.right = true;
-      touchState.current.left = false;
-    } else {
-      touchState.current.left = false;
-      touchState.current.right = false;
-    }
-  };
 
   const update = () => {
     if (isPaused) return;
@@ -706,8 +642,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       else {
         paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smooth stabilization
       }
-    } else if (isLaunched && isMobileDevice) {
-      // Hardware Gyroscope Rotation
+    } else if (isLaunched && isMobileDevice && useGyroscope) {
+      // Hardware Gyroscope Rotation enabled
       paddleRef.current.angle += (deviceTiltRef.current - paddleRef.current.angle) * 0.15; // Smooth interpolation
     } else {
       paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smoothly lock back to flat when holding balls
@@ -2047,39 +1983,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         }}
       />
 
-      {/* Virtual Controls for Touch Devices */}
-      {isTouchDevice && !isPaused && useVirtualControls && (
-        <div className="absolute inset-0 pointer-events-none z-50 flex justify-between items-end pb-8 px-8">
-          {/* Left Virtual Joystick */}
-          <div
-            className="w-48 h-48 rounded-full border-2 border-white/20 bg-white/10 pointer-events-auto relative touch-none"
-            onTouchStart={(e) => handleJoy(e, true)}
-            onTouchMove={(e) => handleJoy(e, true)}
-            onTouchEnd={(e) => handleJoy(e, false)}
-            onTouchCancel={(e) => handleJoy(e, false)}
-          >
-            {/* Inner knob */}
-            <div className="absolute w-16 h-16 rounded-full bg-white/40 left-1/2 top-1/2 shadow-lg"
-              style={{ transform: `translate(calc(-50% + ${joyPos.x}px), calc(-50% + ${joyPos.y}px))` }}
-            />
-          </div>
-
-          {/* Right Action Button */}
-          <div
-            className="w-24 h-24 rounded-full border-2 border-red-500/50 bg-red-500/30 flex items-center justify-center pointer-events-auto touch-none shadow-[0_0_15px_rgba(239,68,68,0.3)] active:bg-red-500/50 transition-colors"
-            onTouchStart={(e) => {
-              // Prevent default to avoid simulating mouse clicks
-              e.preventDefault();
-              touchState.current.action = true;
-              fireProjectile();
-            }}
-            onTouchEnd={(e) => { e.preventDefault(); touchState.current.action = false; }}
-            onTouchCancel={(e) => { e.preventDefault(); touchState.current.action = false; }}
-          >
-            <span className="text-white/70 font-bold tracking-widest text-sm select-none">FIRE</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

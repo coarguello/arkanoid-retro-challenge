@@ -63,16 +63,13 @@ const App: React.FC = () => {
   const [showShop, setShowShop] = useState(false);
   const [shopTab, setShopTab] = useState<'paddle' | 'ball' | 'background' | 'exchange' | 'gacha'>('paddle');
   const [isMuted, setIsMuted] = useState(false);
-  const [useVirtualControls, setUseVirtualControls] = useState(() => {
-    return localStorage.getItem('arkanoid_virtual_controls') === 'true';
+  const [useGyroscope, setUseGyroscope] = useState(() => {
+    return localStorage.getItem('arkanoid_use_gyroscope') !== 'false';
   });
 
-  const toggleVirtualControls = () => {
-    setUseVirtualControls(prev => {
-      const next = !prev;
-      localStorage.setItem('arkanoid_virtual_controls', next.toString());
-      return next;
-    });
+  const handleSetGyroscope = (val: boolean) => {
+    setUseGyroscope(val);
+    localStorage.setItem('arkanoid_use_gyroscope', val.toString());
   };
 
   const [discountedItemId, setDiscountedItemId] = useState<string | null>(null);
@@ -946,7 +943,7 @@ const App: React.FC = () => {
         initialLives={lives}
         shipConfig={shipConfig}
         inventory={inventory} // Pass down inventory for custom drawing
-        useVirtualControls={useVirtualControls}
+        useGyroscope={useGyroscope}
       />
 
       {/* HUD overlaid on top of canvas */}
@@ -1007,17 +1004,6 @@ const App: React.FC = () => {
 
         {/* Top Right System Toggles */}
         <div className="absolute top-16 right-4 z-50 flex items-center gap-2 pointer-events-auto">
-          {/* Virtual Controls Toggle Button */}
-          <button
-            onClick={toggleVirtualControls}
-            className={`p-2 bg-black/50 border rounded-lg transition-colors ${useVirtualControls ? 'border-blue-500 text-blue-400' : 'border-zinc-800 text-zinc-500 hover:text-white'}`}
-            title={useVirtualControls ? "Usando controles virtuales" : "Usar controles virtuales (Joysticks en pantalla)"}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-1.017c.055-1.612.083-3.245.083-4.897 0-1.645-.028-3.284-.083-4.896a48.11 48.11 0 0 0-5.427-1.017c-.333-.018-.61.247-.61.58v0c0 .355.186.676.401.959.221.29.349.634.349 1.003 0 1.035-1.008 1.875-2.25 1.875-1.243 0-2.25-.84-2.25-1.875 0-.369.128-.713.349-1.003.215-.283.401-.604.401-.959v0c0-.31-.245-.566-.554-.543a48.038 48.038 0 0 0-4.043.208A.656.656 0 0 1 14.25 6.087Z" />
-            </svg>
-          </button>
-
           <button
             onClick={handleToggleMute}
             className={`p-2 bg-black/50 border rounded-lg transition-colors ${isMuted ? 'border-red-900/50 text-red-500' : 'border-zinc-800 text-zinc-500 hover:text-white'}`}
@@ -1068,12 +1054,27 @@ const App: React.FC = () => {
               REINICIAR NIVEL
             </button>
 
-            <button
-              onClick={toggleVirtualControls}
-              className={`w-full py-3 border rounded-lg text-xs tracking-tighter transition-colors mt-2 ${useVirtualControls ? 'border-blue-900/50 bg-blue-900/20 text-blue-400' : 'border-zinc-800 hover:bg-zinc-800/50 text-zinc-400'}`}
-            >
-              {useVirtualControls ? 'USANDO JOYSTICK VIRTUAL' : 'USAR ZONAS TÁCTILES'}
-            </button>
+            <div className="grid grid-cols-2 gap-2 w-full mt-2">
+              <button
+                onClick={() => handleSetGyroscope(true)}
+                className={`p-3 border rounded-lg flex flex-col items-center justify-center gap-2 transition-all ${useGyroscope ? 'border-emerald-500 bg-emerald-900/20 text-emerald-400' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
+              >
+                <div className="relative flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="4" y="7" rx="2" ry="2"/><line x1="20" x2="20" y1="12" y2="12"/></svg>
+                  <span className="absolute -left-4 text-[12px] animate-pulse">⤾</span>
+                  <span className="absolute -right-4 text-[12px] animate-pulse">⤿</span>
+                </div>
+                <span className="text-[7px] tracking-widest uppercase text-center mt-1">Giratorio</span>
+              </button>
+              
+              <button
+                onClick={() => handleSetGyroscope(false)}
+                className={`p-3 border rounded-lg flex flex-col items-center justify-center gap-2 transition-all ${!useGyroscope ? 'border-red-500 bg-red-900/20 text-red-400' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="4" y="7" rx="2" ry="2"/><line x1="20" x2="20" y1="12" y2="12"/></svg>
+                <span className="text-[7px] tracking-widest uppercase text-center mt-1">No Giratorio</span>
+              </button>
+            </div>
             <button
               onClick={() => setGameState(GameState.MENU)}
               className="w-full py-3 border border-red-900/50 hover:bg-red-900/20 text-red-400 rounded-lg text-xs tracking-tighter transition-colors mt-4"
