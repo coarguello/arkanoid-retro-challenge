@@ -1004,6 +1004,28 @@ const App: React.FC = () => {
 
         {/* Top Right System Toggles */}
         <div className="absolute top-16 right-4 z-50 flex items-center gap-2 pointer-events-auto">
+          {(!gameState || true) /* Ensure it renders */ && typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+             <div className="flex gap-1 bg-black/50 border border-zinc-800 rounded-lg p-1">
+                <button
+                  onClick={() => handleSetGyroscope(true)}
+                  title="Activar Giratorio"
+                  className={`p-1.5 rounded transition-colors ${useGyroscope ? 'bg-emerald-900/50 text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="4" y="7" rx="2" ry="2"/><line x1="20" x2="20" y1="12" y2="12"/></svg>
+                    <span className="absolute -left-2 text-[10px] animate-pulse">⤾</span>
+                    <span className="absolute -right-2 text-[10px] animate-pulse">⤿</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleSetGyroscope(false)}
+                  title="Activar No Giratorio"
+                  className={`p-1.5 rounded transition-colors ${!useGyroscope ? 'bg-red-900/50 text-red-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="10" x="4" y="7" rx="2" ry="2"/><line x1="20" x2="20" y1="12" y2="12"/></svg>
+                </button>
+             </div>
+          )}
           <button
             onClick={handleToggleMute}
             className={`p-2 bg-black/50 border rounded-lg transition-colors ${isMuted ? 'border-red-900/50 text-red-500' : 'border-zinc-800 text-zinc-500 hover:text-white'}`}
