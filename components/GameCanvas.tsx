@@ -941,6 +941,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         normalizeBallVelocity(ball);
       }
 
+      if (!ball.launched) return; // Prevent infinite resting collision loop
+
       // --- Advanced Paddle Collision (OBB Matrix Transformation) ---
       const paddleCenterX = paddleRef.current.x + paddleRef.current.width / 2;
       const paddleCenterY = paddleRef.current.y + paddleRef.current.height / 2;
