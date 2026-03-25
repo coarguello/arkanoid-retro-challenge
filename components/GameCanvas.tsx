@@ -1978,7 +1978,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animate);
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
-  }, [isPaused]);
+  }, [isPaused, useGyroscope]);
 
   return (
     <div ref={containerRef} className="absolute inset-0 flex items-center justify-center bg-black">
