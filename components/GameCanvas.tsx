@@ -121,6 +121,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const GAME_H = 400;
 
   const paddleRef = useRef({ x: 250, y: 370, width: 100, height: 14, flash: 0, targetWidth: 100, angle: 0 });
+  const deviceTiltRef = useRef<number>(0);
   const paddleEffectTimeoutRef = useRef<number | null>(null);
   const ballsRef = useRef<(Ball & { trail: TrailPart[] })[]>([]);
   const projectilesRef = useRef<Projectile[]>([]);
@@ -499,6 +500,41 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     };
   }, [resetState]);
 
+  // Device Orientation Listener for Gyroscope Rotation
+  useEffect(() => {
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      let tilt = 0;
+      // Get the true rotation of the device (90 = landscape primary, 0 = portrait)
+      const oriAngle = window.screen?.orientation?.angle || (typeof window.orientation === 'number' ? window.orientation : 0);
+      
+      if (oriAngle === 90) {
+        tilt = e.beta || 0; // Steering wheel in landscape right
+      } else if (oriAngle === -90 || oriAngle === 270) {
+        tilt = -(e.beta || 0); // Steering wheel in landscape left
+      } else {
+        tilt = e.gamma || 0; // Steering wheel in portrait
+      }
+
+      // Hardware noise deadzone and hard clamp at 45 degrees
+      const clamped = Math.max(-45, Math.min(45, tilt));
+      if (Math.abs(clamped) > 3) {
+        deviceTiltRef.current = clamped * (Math.PI / 180);
+      } else {
+        deviceTiltRef.current = 0; // Deadzone
+      }
+    };
+
+    if (window.DeviceOrientationEvent && typeof window !== 'undefined') {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    return () => {
+      if (window.DeviceOrientationEvent && typeof window !== 'undefined') {
+        window.removeEventListener('deviceorientation', handleOrientation);
+      }
+    };
+  }, []);
+
   // --- Touch Device Detection and Virtual Controls Logic ---
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -653,27 +689,28 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touchState.current.left;
     const right = keysPressed.current['d'] || keysPressed.current['arrowright'] || touchState.current.right;
-    
-    // Launching is strictly Spacebar or Touch Action now
     const launch = keysPressed.current[' '] || touchState.current.action;
-
+    
     // Mobile/Tablet ban check via User-Agent
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // Rotational logic
     const isLaunched = ballsRef.current.some(b => b.launched);
     if (isLaunched && !isMobileDevice) {
+      // Desktop Keyboard Rotation
       const rotRight = keysPressed.current['w'] || keysPressed.current['arrowup'];
       const rotLeft = keysPressed.current['s'] || keysPressed.current['arrowdown'];
       
       if (rotRight) paddleRef.current.angle = Math.min(paddleRef.current.angle + 0.05, Math.PI / 4); // Max 45 deg right
       else if (rotLeft) paddleRef.current.angle = Math.max(paddleRef.current.angle - 0.05, -Math.PI / 4); // Max 45 deg left
       else {
-        // Natural stabilization back to 0 when keys are released
-        paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1;
+        paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smooth stabilization
       }
+    } else if (isLaunched && isMobileDevice) {
+      // Hardware Gyroscope Rotation
+      paddleRef.current.angle += (deviceTiltRef.current - paddleRef.current.angle) * 0.15; // Smooth interpolation
     } else {
-      paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smoothly lock back to flat
+      paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smoothly lock back to flat when holding balls
     }
 
     if (left && paddleRef.current.x > 5) paddleRef.current.x -= 8;
