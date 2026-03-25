@@ -165,8 +165,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   const EFFECT_DURATION = 10000;
 
   const normalizeBallVelocity = (ball: Ball) => {
-    const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+    let currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
     const targetSpeed = currentSpeedRef.current * (ball.speedMultiplier || 1.0);
+    
+    // Safety clamp: Prevent infinite horizontal loops by enforcing a minimum vertical limit
+    const minVertical = targetSpeed * 0.35;
+    if (Math.abs(ball.dy) < minVertical) {
+      ball.dy = ball.dy >= 0 ? minVertical : -minVertical;
+      currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+    }
+
     if (currentSpeed > 0) {
       ball.dx = (ball.dx / currentSpeed) * targetSpeed;
       ball.dy = (ball.dy / currentSpeed) * targetSpeed;
@@ -1025,6 +1033,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           const targetSpeed = currentSpeedRef.current * (ball.speedMultiplier || 1);
           ball.dx = Math.sin(finalAngle) * targetSpeed;
           ball.dy = -Math.cos(finalAngle) * targetSpeed;
+
+          normalizeBallVelocity(ball); // Guard against perfectly horizontal deflections
 
           ball.combo = 0;
           ball.goldHitsSequence = 0;
