@@ -347,10 +347,12 @@ const App: React.FC = () => {
         setAuthError('Credenciales incorrectas.');
       } else if (error.code === 'auth/user-not-found') {
         setAuthError('No se encontró cuenta con ese email.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setAuthError('Demasiados intentos. Intenta más tarde.');
       } else if (error.code === 'auth/weak-password') {
         setAuthError('La contraseña debe tener al menos 6 caracteres.');
       } else {
-        setAuthError('Ocurrió un error. Intenta nuevamente.');
+        setAuthError(`Error de sistema: ${error.code || 'Desconocido'}. Intenta nuevamente.`);
       }
     } finally {
       setIsAuthLoading(false);
