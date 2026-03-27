@@ -493,7 +493,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       keysPressed.current[k] = true;
-      if (k === 'w' || e.key === 'ArrowUp' || k === ' ') {
+      // If NOT in gyroscope mode, Up keys launch/fire
+      if ((k === ' ' || k === 'w' || e.key === 'ArrowUp') && !useGyroscope) {
+        fireProjectile();
+      } else if (k === ' ') {
         fireProjectile();
       }
     };
@@ -633,22 +636,25 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
     const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touchState.current.left;
     const right = keysPressed.current['d'] || keysPressed.current['arrowright'] || touchState.current.right;
-    const launch = keysPressed.current[' '] || touchState.current.action;
+    
+    // In Fixed mode, Up keys also trigger launch/fire
+    const upPressed = keysPressed.current['w'] || keysPressed.current['arrowup'];
+    const launch = keysPressed.current[' '] || touchState.current.action || (!useGyroscope && upPressed);
     
     // Mobile/Tablet ban check via User-Agent
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // Rotational logic
     const isLaunched = ballsRef.current.some(b => b.launched);
-    if (isLaunched && !isMobileDevice) {
-      // Desktop Keyboard Rotation
+    if (isLaunched && !isMobileDevice && useGyroscope) {
+      // Desktop Keyboard Rotation (Only in Giratorio mode)
       const rotRight = keysPressed.current['w'] || keysPressed.current['arrowup'];
       const rotLeft = keysPressed.current['s'] || keysPressed.current['arrowdown'];
       
-      if (rotRight) paddleRef.current.angle = Math.min(paddleRef.current.angle + 0.05, Math.PI / 4); // Max 45 deg right
-      else if (rotLeft) paddleRef.current.angle = Math.max(paddleRef.current.angle - 0.05, -Math.PI / 4); // Max 45 deg left
+      if (rotRight) paddleRef.current.angle = Math.min(paddleRef.current.angle + 0.05, Math.PI / 9); // Clamped to 20 deg
+      else if (rotLeft) paddleRef.current.angle = Math.max(paddleRef.current.angle - 0.05, -Math.PI / 9);
       else {
-        paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1; // Smooth stabilization
+        paddleRef.current.angle += (0 - paddleRef.current.angle) * 0.1;
       }
     } else if (isLaunched && isMobileDevice && useGyroscope) {
       // Hardware Gyroscope Rotation enabled
