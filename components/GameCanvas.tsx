@@ -522,8 +522,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         tilt = e.gamma || 0; // Steering wheel in portrait
       }
 
-      // Hardware noise deadzone and hard clamp at 45 degrees
-      const clamped = Math.max(-45, Math.min(45, tilt));
+      // Hardware noise deadzone and hard clamp at 20 degrees (keeps paddle always playable)
+      const clamped = Math.max(-20, Math.min(20, tilt));
       if (Math.abs(clamped) > 3) {
         deviceTiltRef.current = clamped * (Math.PI / 180);
       } else {
