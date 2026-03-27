@@ -506,7 +506,6 @@ const App: React.FC = () => {
             </form>
 
             <div className="mt-6 flex flex-col gap-2 text-center">
-              {/* Temporarily disabled by user request
               {!isReset && (
                 <button
                   onClick={() => setAuthModal('reset')}
@@ -515,7 +514,6 @@ const App: React.FC = () => {
                   ¿Olvidaste tu contraseña?
                 </button>
               )}
-              */}
               <button
                 onClick={() => setAuthModal(isLogin ? 'register' : 'login')}
                 className="text-xs font-sans text-zinc-500 hover:text-blue-400 transition-colors"
