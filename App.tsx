@@ -14,6 +14,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { Network } from '@capacitor/network';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
@@ -169,17 +170,21 @@ const App: React.FC = () => {
     }
   }, [gameState, isOnline]);
 
-  // Offline detection and persistence
+  // Offline detection and persistence (Native via Capacitor Network)
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    // Initial fetch
+    Network.getStatus().then(status => {
+      setIsOnline(status.connected);
+    });
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    const handleNetworkChange = async (status: any) => {
+      setIsOnline(status.connected);
+    };
+
+    Network.addListener('networkStatusChange', handleNetworkChange);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      Network.removeAllListeners();
     };
   }, []);
 
@@ -251,65 +256,75 @@ const App: React.FC = () => {
   // Listen to Firebase Auth state (Sync data only if online)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (user && isOnline) {
         setCurrentUser(user.uid);
         setCurrentUsername(user.displayName || 'Piloto Anónimo');
         localStorage.setItem('arkanoid_user', user.uid);
 
-        if (isOnline) {
-          // Fetch User Inventory from Firestore
-          try {
-            const userRef = doc(db, 'users', user.uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              const cloudInv = userSnap.data().inventory;
-              setInventory(cloudInv);
-              localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
-            } else {
-              // Create default document if it doesn't exist (clean slate for new users)
-              const defaultInventory: UserInventory = {
-                coins: 0,
-                totalPoints: 0,
-                unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
-                equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
-                isBossDefeated: false
-              };
-              await setDoc(userRef, {
-                username: user.displayName || 'Piloto Anónimo',
-                inventory: defaultInventory,
-                lastActive: new Date().toISOString()
-              });
-              setInventory(defaultInventory);
-              localStorage.setItem('arkanoid_inventory', JSON.stringify(defaultInventory));
-            }
-          } catch (e) {
-            console.error("Error fetching user data:", e);
+        // Fetch User Inventory from Firestore
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const cloudInv = userSnap.data().inventory;
+            setInventory(cloudInv);
+            localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
+          } else {
+            // Create default document if it doesn't exist (clean slate for new users)
+            const defaultInventory: UserInventory = {
+              coins: 0,
+              totalPoints: 0,
+              unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
+              equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
+              isBossDefeated: false
+            };
+            await setDoc(userRef, {
+              username: user.displayName || 'Piloto Anónimo',
+              inventory: defaultInventory,
+              lastActive: new Date().toISOString()
+            });
+            setInventory(defaultInventory);
+            localStorage.setItem('arkanoid_inventory', JSON.stringify(defaultInventory));
           }
+        } catch (e) {
+          console.error("Error fetching user data:", e);
+        }
 
-          // Fetch Personal Best Score from Leaderboards
-          try {
-            const userScoreRef = doc(db, 'leaderboards', user.uid);
-            const userScoreSnap = await getDoc(userScoreRef);
-            if (userScoreSnap.exists()) {
-              setPersonalScore(userScoreSnap.data().score);
-            } else {
-              setPersonalScore(0);
-            }
-          } catch (e) {
-            console.error("Error fetching personal score:", e);
+        // Fetch Personal Best Score from Leaderboards
+        try {
+          const userScoreRef = doc(db, 'leaderboards', user.uid);
+          const userScoreSnap = await getDoc(userScoreRef);
+          if (userScoreSnap.exists()) {
+            setPersonalScore(userScoreSnap.data().score);
+          } else {
+            setPersonalScore(0);
           }
+        } catch (e) {
+          console.error("Error fetching personal score:", e);
         }
 
       } else {
+        // Either the user is truly logged out, or they lost internet connection
+        // Force the app to treat them as unauthenticated and give offline defaults.
         setCurrentUser(null);
         setCurrentUsername(null);
         setPersonalScore(0);
         localStorage.removeItem('arkanoid_user');
+
+        const defaultInventory: UserInventory = {
+          coins: 0,
+          totalPoints: 0,
+          unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
+          equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
+          isBossDefeated: false
+        };
+        setInventory(defaultInventory);
       }
     });
 
     return () => unsubscribe();
-  }, [isOnline]); // Added isOnline to dependency array
+  }, [isOnline]); // Trigger whenever connection changes
+
 
   const handleAuthSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
