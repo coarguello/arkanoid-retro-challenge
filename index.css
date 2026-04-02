@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@import "tailwindcss";
+
+
+@layer base {
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #1a1a1a;
+    font-family: 'Press Start 2P', monospace, cursive;
+    overflow: hidden;
+  }
+}
+
+@layer utilities {
+  .retro-font {
+    font-family: 'Press Start 2P', monospace, cursive;
+  }
+}
