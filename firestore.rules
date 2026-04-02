@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Leaderboards collection
+    match /leaderboards/{userId} {
+      // Anyone can read high scores to see the global leaderboard
+      allow read: if true;
+      // Only the authenticated user can create or update their own score
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      // Only the authenticated user can read or write their own profile and inventory
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

@@ -30,6 +30,8 @@ const App: React.FC = () => {
   const [personalScore, setPersonalScore] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState(3);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showOfflineNotice, setShowOfflineNotice] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() => {
     const saved = localStorage.getItem('arkanoid_leaderboard');
     if (saved) {
@@ -101,8 +103,9 @@ const App: React.FC = () => {
           return top50;
         });
 
-        // 2. Push high score to Firestore Database (Only if it's their best)
+        // 2. Push high score to Firestore Database (Only if it's their best and online)
         const saveScoreToCloud = async () => {
+          if (!isOnline) return;
           try {
             const userScoreRef = doc(db, 'leaderboards', currentUser);
             const userScoreSnap = await getDoc(userScoreRef);
@@ -126,8 +129,8 @@ const App: React.FC = () => {
         setInventory(prev => {
           const newInv = { ...prev, totalPoints: prev.totalPoints + score };
           localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
-          // Async update user doc points in DB
-          if (currentUser) {
+          // Async update user doc points in DB (Only if online)
+          if (currentUser && isOnline) {
             setDoc(doc(db, 'users', currentUser), { inventory: newInv }, { merge: true })
               .catch(e => console.error("Error updating user points:", e));
           }
@@ -140,9 +143,9 @@ const App: React.FC = () => {
     }
   }, [gameState, score, currentUser, currentUsername]);
 
-  // Fetch Global Leaderboard when returning to Menu
+  // Fetch Global Leaderboard when returning to Menu (Only if online)
   useEffect(() => {
-    if (gameState === GameState.MENU) {
+    if (gameState === GameState.MENU && isOnline) {
       const fetchLeaderboard = async () => {
         try {
           const q = query(collection(db, 'leaderboards'), orderBy('score', 'desc'), limit(50));
@@ -164,7 +167,26 @@ const App: React.FC = () => {
       };
       fetchLeaderboard();
     }
-  }, [gameState]);
+  }, [gameState, isOnline]);
+
+  // Offline detection and persistence
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const triggerOfflineNotice = () => {
+    setShowOfflineNotice(true);
+    setTimeout(() => setShowOfflineNotice(false), 3000);
+  };
 
   // Auto-pause when window loses focus or becomes hidden
   useEffect(() => {
@@ -226,7 +248,7 @@ const App: React.FC = () => {
 
   const [tempShipColor, setTempShipColor] = useState<string>('#ef4444');
 
-  // Listen to Firebase Auth state
+  // Listen to Firebase Auth state (Sync data only if online)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -234,46 +256,48 @@ const App: React.FC = () => {
         setCurrentUsername(user.displayName || 'Piloto Anónimo');
         localStorage.setItem('arkanoid_user', user.uid);
 
-        // Fetch User Inventory from Firestore
-        try {
-          const userRef = doc(db, 'users', user.uid);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            const cloudInv = userSnap.data().inventory;
-            setInventory(cloudInv);
-            localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
-          } else {
-            // Create default document if it doesn't exist (clean slate for new users)
-            const defaultInventory: UserInventory = {
-              coins: 0,
-              totalPoints: 0,
-              unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
-              equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
-              isBossDefeated: false
-            };
-            await setDoc(userRef, {
-              username: user.displayName || 'Piloto Anónimo',
-              inventory: defaultInventory,
-              lastActive: new Date().toISOString()
-            });
-            setInventory(defaultInventory);
-            localStorage.setItem('arkanoid_inventory', JSON.stringify(defaultInventory));
+        if (isOnline) {
+          // Fetch User Inventory from Firestore
+          try {
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const cloudInv = userSnap.data().inventory;
+              setInventory(cloudInv);
+              localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
+            } else {
+              // Create default document if it doesn't exist (clean slate for new users)
+              const defaultInventory: UserInventory = {
+                coins: 0,
+                totalPoints: 0,
+                unlockedIds: ['paddle_default', 'ball_default', 'bg_default'],
+                equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default' },
+                isBossDefeated: false
+              };
+              await setDoc(userRef, {
+                username: user.displayName || 'Piloto Anónimo',
+                inventory: defaultInventory,
+                lastActive: new Date().toISOString()
+              });
+              setInventory(defaultInventory);
+              localStorage.setItem('arkanoid_inventory', JSON.stringify(defaultInventory));
+            }
+          } catch (e) {
+            console.error("Error fetching user data:", e);
           }
-        } catch (e) {
-          console.error("Error fetching user data:", e);
-        }
 
-        // Fetch Personal Best Score from Leaderboards
-        try {
-          const userScoreRef = doc(db, 'leaderboards', user.uid);
-          const userScoreSnap = await getDoc(userScoreRef);
-          if (userScoreSnap.exists()) {
-            setPersonalScore(userScoreSnap.data().score);
-          } else {
-            setPersonalScore(0);
+          // Fetch Personal Best Score from Leaderboards
+          try {
+            const userScoreRef = doc(db, 'leaderboards', user.uid);
+            const userScoreSnap = await getDoc(userScoreRef);
+            if (userScoreSnap.exists()) {
+              setPersonalScore(userScoreSnap.data().score);
+            } else {
+              setPersonalScore(0);
+            }
+          } catch (e) {
+            console.error("Error fetching personal score:", e);
           }
-        } catch (e) {
-          console.error("Error fetching personal score:", e);
         }
 
       } else {
@@ -285,7 +309,7 @@ const App: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isOnline]); // Added isOnline to dependency array
 
   const handleAuthSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -953,7 +977,10 @@ const App: React.FC = () => {
         <div className="flex flex-col gap-0.5 flex-1 items-start">
           {gameState === GameState.PLAYING || gameState === GameState.PAUSED ? (
             <>
-              <span className="text-[7px] text-zinc-500 uppercase">Récord</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[7px] text-zinc-500 uppercase">Récord</span>
+                {!isOnline && <span className="text-[6px] bg-red-600 text-white px-1 rounded animate-pulse">SIN RED</span>}
+              </div>
               <span className="text-[10px] text-yellow-500">{personalScore.toString().padStart(6, '0')}</span>
             </>
           ) : (
@@ -1154,12 +1181,12 @@ const App: React.FC = () => {
                   </svg>
                 </div>
 
-                {currentUser && (
+                 {currentUser && (
                   <button
-                    onClick={() => setShowShop(true)}
-                    className="w-full px-4 py-4 bg-zinc-900 hover:bg-zinc-800 text-yellow-500 font-bold border-2 border-yellow-900/50 hover:border-yellow-500 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]"
+                    onClick={() => isOnline ? setShowShop(true) : triggerOfflineNotice()}
+                    className={`w-full px-4 py-4 bg-zinc-900 text-yellow-500 font-bold border-2 rounded-lg text-sm tracking-widest transition-all mt-1 flex justify-center items-center gap-3 shadow-[0_0_15px_rgba(234,179,8,0.1)] ${isOnline ? 'hover:bg-zinc-800 border-yellow-900/50 hover:border-yellow-500 hover:shadow-[0_0_20px_rgba(234,179,8,0.3)]' : 'opacity-70 border-zinc-800'}`}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isOnline ? "text-yellow-400" : "text-zinc-600"}>
                       <circle cx="9" cy="21" r="1"></circle>
                       <circle cx="20" cy="21" r="1"></circle>
                       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
@@ -1175,17 +1202,17 @@ const App: React.FC = () => {
                 >
                   CERRAR SESIÓN
                 </button>
-              ) : (
+               ) : (
                 <div className="flex gap-4 w-full">
                   <button
-                    onClick={() => setAuthModal('register')}
-                    className="flex-1 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-blue-400 border border-zinc-800 hover:border-blue-500/50 rounded-lg text-xs tracking-tighter transition-all"
+                    onClick={() => isOnline ? setAuthModal('register') : triggerOfflineNotice()}
+                    className={`flex-1 px-4 py-3 bg-zinc-900 text-blue-400 border rounded-lg text-xs tracking-tighter transition-all ${isOnline ? 'hover:bg-zinc-800 border-zinc-800 hover:border-blue-500/50' : 'opacity-50 border-zinc-900'}`}
                   >
                     Crear Cuenta
                   </button>
                   <button
-                    onClick={() => setAuthModal('login')}
-                    className="flex-1 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 hover:border-emerald-500/50 rounded-lg text-xs tracking-tighter transition-all"
+                    onClick={() => isOnline ? setAuthModal('login') : triggerOfflineNotice()}
+                    className={`flex-1 px-4 py-3 bg-zinc-900 text-emerald-400 border rounded-lg text-xs tracking-tighter transition-all ${isOnline ? 'hover:bg-zinc-800 border-zinc-800 hover:border-emerald-500/50' : 'opacity-50 border-zinc-900'}`}
                   >
                     Ingresar
                   </button>
@@ -1272,8 +1299,16 @@ const App: React.FC = () => {
         )
       }
 
-      {/* Overlays */}
+       {/* Overlays */}
       {renderShopModal()}
+
+      {/* Offline Notice Bar */}
+      <div className={`absolute bottom-0 left-0 right-0 z-[200] bg-red-600 text-white py-4 transition-all duration-500 transform ${showOfflineNotice ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className="flex items-center justify-center gap-4 text-center">
+            <span className="animate-pulse">⚠️</span>
+            <span className="text-[10px] tracking-[0.2em] font-bold">FUNCIÓN NO DISPONIBLE SIN CONEXIÓN</span>
+        </div>
+      </div>
     </div >
   );
 };
