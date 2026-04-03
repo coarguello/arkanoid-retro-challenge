@@ -871,6 +871,25 @@ const App: React.FC = () => {
                           {item.type === 'ball' && (
                             <div className="w-6 h-6 rounded-full shadow-xl" style={{ background: item.colorPrimary, boxShadow: item.effectType === 'fire' ? '0 0 20px #f97316' : item.effectType === 'rainbow' ? '0 0 15px #fff' : 'none' }}></div>
                           )}
+                          {item.type === 'block' && (
+                            <div className="flex flex-col gap-1 items-center z-10 p-2 relative">
+                              <div className="w-12 h-4 rounded-sm" style={{ 
+                                background: (item.effectType === 'neon_hollow' || item.effectType === 'neon_hollow_interleaved') ? 'rgba(0,0,0,0.6)' 
+                                          : (item.colorSecondary && !item.effectType) ? `linear-gradient(180deg, ${item.colorPrimary}, ${item.colorSecondary})` : item.colorPrimary,
+                                border: (item.effectType === 'neon_hollow' || item.effectType === 'neon_hollow_interleaved') ? `1px solid #fff` : item.effectType === 'synthwave' ? `2px solid ${item.colorSecondary}` : '1px solid rgba(0,0,0,0.5)',
+                                boxShadow: (item.effectType === 'neon_hollow' || item.effectType === 'neon_hollow_interleaved') ? `0 0 8px 2px ${item.colorPrimary}, inset 0 0 4px ${item.colorPrimary}` 
+                                           : item.effectType === 'ghost' ? `0 0 10px ${item.colorPrimary}` : 'none',
+                                opacity: item.effectType === 'ice' || item.effectType === 'ghost' ? 0.6 : 1
+                              }}></div>
+                              {item.effectType === 'neon_hollow_interleaved' && (
+                                <div className="w-12 h-4 rounded-sm" style={{ 
+                                  background: 'rgba(0,0,0,0.6)',
+                                  border: `1px solid #fff`,
+                                  boxShadow: `0 0 8px 2px ${item.colorSecondary || item.colorPrimary}, inset 0 0 4px ${item.colorSecondary || item.colorPrimary}`
+                                }}></div>
+                              )}
+                            </div>
+                          )}
                           {isEquipped && (
                             <div className="absolute top-2 right-2 bg-blue-600 text-[9px] uppercase font-['Press_Start_2P'] px-2 py-1 rounded text-white shadow-md">
                               Activo
