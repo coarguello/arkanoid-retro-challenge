@@ -1618,12 +1618,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       else if (b.type === 'BONUS') { color = '#a855f7'; text = '?'; }
       else if (b.type === 'GOLD') { color = '#facc15'; text = '---'; }
       else if (b.type === 'SILVER') {
-        color = b.hp === 3 ? '#e5e7eb' : b.hp === 2 ? '#9ca3af' : '#4b5563';
+        color = b.hp === 3 ? '#f8fafc' : b.hp === 2 ? '#94a3b8' : '#475569';
       } else {
         // NORMAL BRICKS USE SHOP ITEMS
         color = blockItem?.colorPrimary || '#ef4444';
-        isEffectApplied = !!blockItem?.effectType;
       }
+      
+      isEffectApplied = !!blockItem?.effectType;
 
       if (isEffectApplied && blockItem) {
         if (blockItem.effectType === 'synthwave') {
@@ -1635,38 +1636,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.lineWidth = 2;
           ctx.strokeRect(bx, by, b.width, b.height);
           ctx.lineWidth = 1;
-        } else if (blockItem.effectType === 'neon_hollow') {
-          // Fondo hueco muy oscuro
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = 'rgba(0,0,0,0.8)';
-          ctx.fillRect(bx, by, b.width, b.height);
-          
-          // Resplandor de Neón y borde exterior a color
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = color;
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 3;
-          ctx.strokeRect(bx, by, b.width, b.height);
-          
-          // Núcleo caliente blanco del Neón (esto lo hace lucir profesional)
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(bx, by, b.width, b.height);
+        } else if (blockItem.effectType === 'neon_hollow' || blockItem.effectType === 'neon_hollow_interleaved') {
+          // Si el bloque NO es NORMAL, mantenemos su color nativo en formato neón.
+          // Si ES normal e Intercalado, alternamos el color.
+          const finalColor = (b.type === 'NORMAL' && blockItem.effectType === 'neon_hollow_interleaved') 
+            ? ((b.row % 2 === 0) ? blockItem.colorPrimary : (blockItem.colorSecondary || blockItem.colorPrimary))
+            : color;
 
-        } else if (blockItem.effectType === 'neon_hollow_interleaved') {
-          const rowColor = (b.row % 2 === 0) ? blockItem.colorPrimary : (blockItem.colorSecondary || blockItem.colorPrimary);
-          
           ctx.shadowBlur = 0;
           ctx.fillStyle = 'rgba(0,0,0,0.8)';
           ctx.fillRect(bx, by, b.width, b.height);
           
           ctx.shadowBlur = 15;
-          ctx.shadowColor = rowColor;
-          ctx.strokeStyle = rowColor;
+          ctx.shadowColor = finalColor;
+          ctx.strokeStyle = finalColor;
           ctx.lineWidth = 3;
           ctx.strokeRect(bx, by, b.width, b.height);
-
+          
           ctx.shadowBlur = 0;
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 1;
@@ -1707,20 +1693,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       // Cracks for silver
       if (b.type === 'SILVER' && b.hp && b.hp < 3) {
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.strokeStyle = (isEffectApplied && (blockItem?.effectType === 'neon_hollow' || blockItem?.effectType === 'neon_hollow_interleaved')) ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.4)';
         ctx.moveTo(bx + b.width * 0.2, by); ctx.lineTo(bx + b.width * 0.5, by + b.height * 0.6);
         if (b.hp < 2) { ctx.lineTo(bx + b.width * 0.8, by + b.height); }
         ctx.stroke();
       }
 
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.fillRect(bx, by, b.width, 3);
+      if (!isEffectApplied) {
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(bx, by, b.width, 3);
+      }
 
       if (text) {
         ctx.fillStyle = 'white';
+        if (isEffectApplied && (blockItem?.effectType === 'neon_hollow' || blockItem?.effectType === 'neon_hollow_interleaved')) {
+           ctx.shadowBlur = 6;
+           ctx.shadowColor = color; 
+        } else {
+           ctx.shadowBlur = 0;
+        }
         ctx.font = text === 'MEGA' ? '7px "Press Start 2P"' : '8px "Press Start 2P"';
         ctx.textAlign = 'center';
         ctx.fillText(text, bx + b.width / 2, by + b.height / 2 + 4);
+        ctx.shadowBlur = 0;
       }
     });
 
