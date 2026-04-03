@@ -128,7 +128,7 @@ export interface GameDimensions {
 
 // --- Shop & Inventory System Interfaces ---
 
-export type ShopCategory = 'paddle' | 'ball' | 'background';
+export type ShopCategory = 'paddle' | 'ball' | 'background' | 'block';
 
 export interface ShopItem {
   id: string;
@@ -151,5 +151,6 @@ export interface UserInventory {
     paddle: string;
     ball: string;
     background: string;
+    block: string;
   };
 }

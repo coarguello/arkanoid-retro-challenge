@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { GameState, Brick, Ball, Projectile, Collectible, Enemy, EnemyProjectile, Boss, Explosion, Particle, TrailPart, ShipConfig, UserInventory } from '../types';
 import { LEVELS, BRICK_MAP } from '../levels';
+import { SHOP_ITEMS } from '../shopData';
 import { playMenuMusic, playGameMusic, playGameOverMusic, stopMusic, getMute } from '../audioUtils';
 
 interface GameCanvasProps {
@@ -1592,6 +1593,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.closePath();
     });
 
+    const equippedBlockId = inventoryRef.current?.equipped.block || 'block_default';
+    const blockItem = SHOP_ITEMS.find(it => it.id === equippedBlockId);
+
     // Bricks
     bricksRef.current.forEach(b => {
       if (!b.active) return;
@@ -1607,18 +1611,62 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
       let color = '#ef4444';
       let text = '';
+      let isEffectApplied = false;
+
       if (b.type === 'TNT') { color = '#f97316'; text = 'TNT'; }
-      if (b.type === 'LARGE_TNT') { color = '#ea580c'; text = 'MEGA'; }
-      if (b.type === 'BONUS') { color = '#a855f7'; text = '?'; }
-      if (b.type === 'GOLD') { color = '#facc15'; text = '---'; }
-      if (b.type === 'SILVER') {
+      else if (b.type === 'LARGE_TNT') { color = '#ea580c'; text = 'MEGA'; }
+      else if (b.type === 'BONUS') { color = '#a855f7'; text = '?'; }
+      else if (b.type === 'GOLD') { color = '#facc15'; text = '---'; }
+      else if (b.type === 'SILVER') {
         color = b.hp === 3 ? '#e5e7eb' : b.hp === 2 ? '#9ca3af' : '#4b5563';
+      } else {
+        // NORMAL BRICKS USE SHOP ITEMS
+        color = blockItem?.colorPrimary || '#ef4444';
+        isEffectApplied = !!blockItem?.effectType;
       }
 
-      ctx.fillStyle = color;
-      ctx.fillRect(bx, by, b.width, b.height);
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-      ctx.strokeRect(bx, by, b.width, b.height);
+      if (isEffectApplied && blockItem) {
+        if (blockItem.effectType === 'synthwave') {
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = blockItem.colorSecondary || '#ec4899';
+          ctx.fillStyle = color;
+          ctx.fillRect(bx, by, b.width, b.height);
+          ctx.strokeStyle = blockItem.colorSecondary || '#06b6d4';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(bx, by, b.width, b.height);
+          ctx.lineWidth = 1;
+        } else if (blockItem.effectType === 'ice') {
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.6;
+          ctx.fillRect(bx, by, b.width, b.height);
+          ctx.globalAlpha = 1.0;
+          ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+          ctx.strokeRect(bx, by, b.width, b.height);
+        } else if (blockItem.effectType === 'ghost') {
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = color;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(bx, by, b.width, b.height);
+          ctx.strokeStyle = color;
+          ctx.strokeRect(bx, by, b.width, b.height);
+        }
+        ctx.shadowBlur = 0;
+      } else if (b.type === 'NORMAL' && blockItem?.colorSecondary) {
+        // Dual colors without effects
+        const gradient = ctx.createLinearGradient(bx, by, bx + b.width, by + b.height);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, blockItem.colorSecondary);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(bx, by, b.width, b.height);
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.strokeRect(bx, by, b.width, b.height);
+      } else {
+        // Basic solid fill
+        ctx.fillStyle = color;
+        ctx.fillRect(bx, by, b.width, b.height);
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.strokeRect(bx, by, b.width, b.height);
+      }
 
       // Cracks for silver
       if (b.type === 'SILVER' && b.hp && b.hp < 3) {
