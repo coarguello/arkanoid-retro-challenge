@@ -866,10 +866,18 @@ const App: React.FC = () => {
                         {/* Item Preview Strip */}
                         <div className="h-24 w-full flex items-center justify-center relative overflow-hidden" style={{ background: item.type === 'background' ? item.colorPrimary : '#111' }}>
                           {item.type === 'paddle' && (
-                            <div className="w-16 h-4 rounded-sm shadow-lg" style={{ background: item.effectType === 'synthwave' ? `linear-gradient(90deg, ${item.colorPrimary}, ${item.colorSecondary})` : item.colorPrimary }}></div>
+                            <div className="w-16 h-4 rounded-sm shadow-lg" style={{ 
+                              background: item.effectType === 'neon_hollow' ? 'rgba(0,0,0,0.6)' : item.effectType === 'synthwave' ? `linear-gradient(90deg, ${item.colorPrimary}, ${item.colorSecondary})` : item.colorPrimary,
+                              border: item.effectType === 'neon_hollow' ? '1px solid #fff' : 'none',
+                              boxShadow: item.effectType === 'neon_hollow' ? `0 0 8px 2px ${item.colorPrimary}, inset 0 0 4px ${item.colorPrimary}` : 'none'
+                             }}></div>
                           )}
                           {item.type === 'ball' && (
-                            <div className="w-6 h-6 rounded-full shadow-xl" style={{ background: item.colorPrimary, boxShadow: item.effectType === 'fire' ? '0 0 20px #f97316' : item.effectType === 'rainbow' ? '0 0 15px #fff' : 'none' }}></div>
+                            <div className="w-6 h-6 rounded-full shadow-xl" style={{ 
+                              background: item.effectType === 'neon_hollow' ? 'rgba(0,0,0,0.6)' : item.colorPrimary, 
+                              border: item.effectType === 'neon_hollow' ? '1px solid #fff' : 'none',
+                              boxShadow: item.effectType === 'neon_hollow' ? `0 0 8px 2px ${item.colorPrimary}, inset 0 0 4px ${item.colorPrimary}` : item.effectType === 'fire' ? '0 0 20px #f97316' : item.effectType === 'rainbow' ? '0 0 15px #fff' : 'none' 
+                             }}></div>
                           )}
                           {item.type === 'block' && (
                             <div className="flex flex-col gap-1 items-center z-10 p-2 relative">

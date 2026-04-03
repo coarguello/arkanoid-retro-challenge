@@ -10,6 +10,11 @@ export const SHOP_ITEMS: ShopItem[] = [
     { id: 'paddle_rainbow', type: 'paddle', name: 'Nyan', description: 'Energía cromática', price: 1500, colorPrimary: '#ffffff', effectType: 'rainbow' },
     { id: 'paddle_plasma', type: 'paddle', name: 'Plasma de la Máquina', description: 'Fabricada con restos del Jefe', price: 2000, colorPrimary: '#cbd5e1', effectType: 'glow', unlockCondition: 'boss_kill' },
     { id: 'paddle_ghost', type: 'paddle', name: 'Espectro', description: 'Atraviesa dimensiones', price: 2500, colorPrimary: '#9ca3af', effectType: 'ghost' },
+    
+    // Paletas Neón Huecas
+    { id: 'paddle_nh_cyan', type: 'paddle', name: 'Barra Neón Cian', description: 'Esqueleto láser de titanio cian', price: 300, colorPrimary: '#06b6d4', effectType: 'neon_hollow' },
+    { id: 'paddle_nh_magenta', type: 'paddle', name: 'Barra Neón Rosa', description: 'Esqueleto láser de titanio rosa', price: 300, colorPrimary: '#ec4899', effectType: 'neon_hollow' },
+
 
     { id: 'ball_default', type: 'ball', name: 'Plasma Base', description: 'Núcleo de plasma inestable', price: 0, colorPrimary: '#ffffff' },
     { id: 'ball_fire', type: 'ball', name: 'Meteorito', description: 'Dejando un rastro de llamas', price: 200, colorPrimary: '#f97316', effectType: 'fire' },
@@ -18,6 +23,12 @@ export const SHOP_ITEMS: ShopItem[] = [
     { id: 'ball_gold', type: 'ball', name: 'Esfera Dorada', description: 'Oro macizo pesado', price: 1000, colorPrimary: '#facc15' },
     { id: 'ball_ghost', type: 'ball', name: 'Alma Perdida', description: 'Translúcida e indetectable', price: 1500, colorPrimary: '#e5e7eb', effectType: 'ghost' },
     { id: 'ball_void', type: 'ball', name: 'Esfera del Vacío', description: 'Absorbe la luz absoluta', price: 3000, colorPrimary: '#000000', effectType: 'glow', unlockCondition: 'boss_kill' },
+
+    // Pelotas Neón Huecas
+    { id: 'ball_nh_cyan', type: 'ball', name: 'Anillo Neón Cian', description: 'Aro láser letal color cian', price: 300, colorPrimary: '#06b6d4', effectType: 'neon_hollow' },
+    { id: 'ball_nh_magenta', type: 'ball', name: 'Anillo Neón Rosa', description: 'Aro láser letal color rosa', price: 300, colorPrimary: '#ec4899', effectType: 'neon_hollow' },
+    { id: 'ball_nh_yellow', type: 'ball', name: 'Anillo Neón Amarillo', description: 'Aro láser letal color amarillo', price: 300, colorPrimary: '#eab308', effectType: 'neon_hollow' },
+
 
     { id: 'bg_default', type: 'background', name: 'Grid Espacial', description: 'Clásico vacío holográfico', price: 0, colorPrimary: '#000000' },
     { id: 'bg_deepspace', type: 'background', name: 'Espacio Profundo', description: 'Silencio y polvo estelar', price: 300, colorPrimary: '#020617' },

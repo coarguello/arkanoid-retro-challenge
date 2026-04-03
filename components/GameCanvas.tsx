@@ -1463,41 +1463,52 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.translate(paddleRef.current.x + halfW, paddleRef.current.y + halfH);
     ctx.rotate(paddleRef.current.angle || 0);
 
-    const equippedPaddle = inventoryRef.current?.equipped.paddle;
-    let effectType = 'none';
-    let pColorPrimary = shipConfig.color;
-    let pColorSecondary = undefined;
+    const equippedPaddleId = inventoryRef.current?.equipped.paddle || 'paddle_default';
+    const paddleItem = SHOP_ITEMS.find(it => it.id === equippedPaddleId);
+    let effectType = paddleItem?.effectType || 'none';
+    let pColorPrimary = paddleItem?.colorPrimary || shipConfig.color;
+    let pColorSecondary = paddleItem?.colorSecondary;
 
-    if (equippedPaddle === 'paddle_blue') pColorPrimary = '#3b82f6';
-    if (equippedPaddle === 'paddle_toxic') { pColorPrimary = '#10b981'; effectType = 'glow'; }
-    if (equippedPaddle === 'paddle_neon') { pColorPrimary = '#ec4899'; pColorSecondary = '#06b6d4'; effectType = 'synthwave'; }
-    if (equippedPaddle === 'paddle_gold') { pColorPrimary = '#fbbf24'; effectType = 'glow'; }
-    if (equippedPaddle === 'paddle_lava') { pColorPrimary = '#ea580c'; pColorSecondary = '#dc2626'; effectType = 'synthwave'; }
-    if (equippedPaddle === 'paddle_rainbow') { pColorPrimary = `hsl(${(Date.now() / 20) % 360}, 100%, 50%)`; effectType = 'rainbow'; }
-    if (equippedPaddle === 'paddle_ghost') { pColorPrimary = 'rgba(209, 213, 219, 0.2)'; effectType = 'ghost'; }
-    if (equippedPaddle === 'paddle_plasma') { pColorPrimary = '#cbd5e1'; effectType = 'glow'; }
+    if (effectType === 'neon_hollow') {
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = ammoRef.current > 0 ? '#fbbf24' : 'rgba(0,0,0,0.8)';
+      ctx.fillRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
 
-    // Set shadows
-    ctx.shadowColor = effectType === 'glow' ? pColorPrimary : effectType === 'synthwave' ? pColorPrimary : 'transparent';
-    ctx.shadowBlur = (effectType === 'glow' || effectType === 'synthwave') ? 15 : 0;
+      if (ammoRef.current <= 0) {
+        ctx.shadowColor = pColorPrimary;
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = pColorPrimary;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
 
-    // Fill style (gradient or solid)
-    if (effectType === 'synthwave' && pColorSecondary) {
-      const grad = ctx.createLinearGradient(-halfW, -halfH, halfW, -halfH);
-      grad.addColorStop(0, pColorPrimary);
-      grad.addColorStop(1, pColorSecondary);
-      ctx.fillStyle = grad;
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
+      }
     } else {
-      ctx.fillStyle = ammoRef.current > 0 ? '#fbbf24' : pColorPrimary; // ammo override
-    }
+      // Set shadows
+      ctx.shadowColor = effectType === 'glow' ? pColorPrimary : effectType === 'synthwave' ? pColorPrimary : 'transparent';
+      ctx.shadowBlur = (effectType === 'glow' || effectType === 'synthwave') ? 15 : 0;
 
-    ctx.fillRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
+      // Fill style (gradient or solid)
+      if (effectType === 'synthwave' && pColorSecondary) {
+        const grad = ctx.createLinearGradient(-halfW, -halfH, halfW, -halfH);
+        grad.addColorStop(0, pColorPrimary);
+        grad.addColorStop(1, pColorSecondary);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = ammoRef.current > 0 ? '#fbbf24' : pColorPrimary; // ammo override
+      }
 
-    if (effectType === 'ghost') {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
-    }
+      ctx.fillRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
+
+      if (effectType === 'ghost') {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-halfW, -halfH, paddleRef.current.width, paddleRef.current.height);
+      }
+    } // <-- MISSING CLOSING BRACE 
 
     ctx.shadowBlur = 0; // reset
     if (paddleRef.current.flash > 0) {
@@ -1508,7 +1519,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
     ctx.restore();
 
     // Balls & Trails
-    const equippedBall = inventoryRef.current?.equipped.ball;
+    const equippedBallId = inventoryRef.current?.equipped.ball || 'ball_default';
+    const ballItem = SHOP_ITEMS.find(it => it.id === equippedBallId);
+    let ballEffect = ballItem?.effectType || 'none';
+    let ballColor = ballItem?.colorPrimary || '#ffffff';
     ballsRef.current.forEach(ball => {
       // Trail
       if (ball.trail) {
@@ -1517,26 +1531,30 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.beginPath();
           ctx.arc(t.x, t.y, ball.radius * ratio, 0, Math.PI * 2);
 
-          if (equippedBall === 'ball_rainbow' && !ball.isFireball) {
+          if (ballEffect === 'rainbow' && !ball.isFireball) {
             const hue = (Date.now() / 5 + i * 20) % 360;
             ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${ratio * 0.8})`;
-          } else if (equippedBall === 'ball_fire' || ball.isFireball) {
+          } else if (ballEffect === 'fire' || ball.isFireball) {
             ctx.fillStyle = `rgba(249, 115, 22, ${ratio * 0.8})`; // Orange/Red trail
-          } else if (equippedBall === 'ball_ice') {
+          } else if (ballEffect === 'ice') {
             ctx.fillStyle = `rgba(186, 230, 253, ${ratio * 0.9})`; // Light blue trail
-          } else if (equippedBall === 'ball_gold') {
+          } else if (equippedBallId === 'ball_gold') {
              ctx.fillStyle = `rgba(250, 204, 21, ${ratio * 0.9})`; // Gold trail
-          } else if (equippedBall === 'ball_ghost') {
+          } else if (ballEffect === 'ghost') {
              ctx.fillStyle = `rgba(255, 255, 255, ${ratio * 0.15})`; // Very faint trail
-          } else if (equippedBall === 'ball_void') {
+          } else if (equippedBallId === 'ball_void') {
             ctx.fillStyle = `rgba(0, 0, 0, ${ratio * 0.9})`; // Dark matter trail
+          } else if (ballEffect === 'neon_hollow') {
+            ctx.globalAlpha = ratio * 0.5;
+            ctx.fillStyle = ballColor;
           } else {
             ctx.fillStyle = `rgba(255, 255, 255, ${ratio * 0.5})`; // White trail for default
           }
 
           ctx.fill();
+          ctx.globalAlpha = 1.0;
 
-          if (equippedBall === 'ball_void') {
+          if (equippedBallId === 'ball_void') {
             ctx.strokeStyle = `rgba(255, 255, 255, ${ratio * 0.3})`;
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -1548,45 +1566,60 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
 
       ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
 
-      let bColor = '#ffffff';
-      let shadowColor = 'transparent';
-      let blurAmount = 0;
+      if (ballEffect === 'neon_hollow') {
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.shadowColor = ballColor;
+        ctx.shadowBlur = 15;
+        ctx.fill();
 
-      if (ball.isFireball || equippedBall === 'ball_fire') {
-        bColor = '#f97316'; // Orange core
-        shadowColor = '#ef4444'; blurAmount = 15;
-      } else if (equippedBall === 'ball_rainbow') {
-        bColor = '#ffffff';
-        shadowColor = `hsl(${(Date.now() / 5) % 360}, 100%, 60%)`;
-        blurAmount = 15;
-      } else if (equippedBall === 'ball_void') {
-        bColor = '#000000'; // Black hole core
-        shadowColor = '#4c1d95'; blurAmount = 10;
-      } else if (equippedBall === 'ball_gold') {
-        bColor = '#facc15';
-        shadowColor = '#ca8a04'; blurAmount = 15;
-      } else if (equippedBall === 'ball_ghost') {
-        bColor = 'rgba(255, 255, 255, 0.2)';
-        // The stroke for ghost ball is handled after fill, so no ctx.stroke() here
-      } else {
-        bColor = '#ffffff'; // Plasma base
-        shadowColor = '#93c5fd';
-        blurAmount = 5; // Slight glow for default
-      }
-
-      ctx.fillStyle = bColor;
-      ctx.shadowColor = shadowColor;
-      ctx.shadowBlur = blurAmount;
-      ctx.fill();
-
-      if (equippedBall === 'ball_void') {
-        ctx.strokeStyle = '#ffffff'; // thin white edge to define the black void sphere
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = ballColor;
+        ctx.lineWidth = 3;
         ctx.stroke();
-      } else if (equippedBall === 'ball_ghost') {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
         ctx.stroke();
+      } else {
+        let bColor = '#ffffff';
+        let shadowColor = 'transparent';
+        let blurAmount = 0;
+
+        if (ball.isFireball || ballEffect === 'fire') {
+          bColor = '#f97316'; // Orange core
+          shadowColor = '#ef4444'; blurAmount = 15;
+        } else if (ballEffect === 'rainbow') {
+          bColor = '#ffffff';
+          shadowColor = `hsl(${(Date.now() / 5) % 360}, 100%, 60%)`;
+          blurAmount = 15;
+        } else if (equippedBallId === 'ball_void') {
+          bColor = '#000000'; // Black hole core
+          shadowColor = '#4c1d95'; blurAmount = 10;
+        } else if (equippedBallId === 'ball_gold') {
+          bColor = '#facc15';
+          shadowColor = '#ca8a04'; blurAmount = 15;
+        } else if (ballEffect === 'ghost') {
+          bColor = 'rgba(255, 255, 255, 0.2)';
+        } else {
+          bColor = ballColor; // Plasma base (was white)
+          shadowColor = '#93c5fd';
+          blurAmount = 5; // Slight glow for default
+        }
+
+        ctx.fillStyle = bColor;
+        ctx.shadowColor = shadowColor;
+        ctx.shadowBlur = blurAmount;
+        ctx.fill();
+
+        if (equippedBallId === 'ball_void') {
+          ctx.strokeStyle = '#ffffff'; // thin white edge to define the black void sphere
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else if (ballEffect === 'ghost') {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       }
 
       ctx.shadowBlur = 0;
