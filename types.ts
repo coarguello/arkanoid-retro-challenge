@@ -154,3 +154,19 @@ export interface UserInventory {
     block: string;
   };
 }
+
+// --- Admin Panel ---
+export interface AdminUserData {
+  uid: string;
+  username: string;
+  coins: number;
+  lastActive: string;
+  isBanned?: boolean;
+  equipped: {
+    paddle: string;
+    ball: string;
+    background: string;
+    block: string;
+  };
+  unlockedIds: string[];
+}

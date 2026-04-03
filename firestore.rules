@@ -1,18 +1,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper function: check if the requesting user is the admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'arguellomolina.josias@gmail.com';
+    }
+
     // Leaderboards collection
     match /leaderboards/{userId} {
       // Anyone can read high scores to see the global leaderboard
       allow read: if true;
       // Only the authenticated user can create or update their own score
       allow write: if request.auth != null && request.auth.uid == userId;
+      // Admin can delete any score (reset / ban from ranking)
+      allow delete: if isAdmin();
     }
 
     // Users collection
     match /users/{userId} {
       // Only the authenticated user can read or write their own profile and inventory
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admin can read and modify any user profile
+      allow read, write, delete: if isAdmin();
     }
   }
 }

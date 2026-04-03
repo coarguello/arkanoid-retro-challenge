@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GameState, LeaderboardEntry, ShipConfig, UserInventory, ShopItem, ShopCategory } from './types';
+import { GameState, LeaderboardEntry, ShipConfig, UserInventory, ShopItem, ShopCategory, AdminUserData } from './types';
 import GameCanvas from './components/GameCanvas';
 import { playMenuMusic, playGameMusic, playGameOverMusic, stopMusic, toggleMute as audioToggleMute } from './audioUtils';
 
@@ -13,7 +13,7 @@ import {
   updateProfile,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
 import { Network } from '@capacitor/network';
 import { SHOP_ITEMS } from './shopData';
 
@@ -80,6 +80,15 @@ const App: React.FC = () => {
   const [gachaReward, setGachaReward] = useState<ShopItem | null>(null);
   const [isGachaDuplicate, setIsGachaDuplicate] = useState(false);
   const [isGachaRolling, setIsGachaRolling] = useState(false);
+
+  // --- Admin Panel State ---
+  const ADMIN_EMAIL = 'arguellomolina.josias@gmail.com';
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUserData[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminConfirm, setAdminConfirm] = useState<{ type: string; uid: string; username: string; itemId?: string } | null>(null);
+  const [adminItemTarget, setAdminItemTarget] = useState<string | null>(null); // uid of user whose items are being managed
 
   useEffect(() => {
     if (isMuted) { stopMusic(); return; }
@@ -161,8 +170,21 @@ const App: React.FC = () => {
           const uniqueScores = Array.from(new Map(topScores.map(item => [item.name, item])).values());
           uniqueScores.sort((a, b) => b.score - a.score);
 
-          setLeaderboard(uniqueScores.slice(0, 50));
-          localStorage.setItem('arkanoid_leaderboard', JSON.stringify(uniqueScores.slice(0, 50)));
+          // Filter out banned users
+          const filteredScores: LeaderboardEntry[] = [];
+          for (const entry of uniqueScores) {
+            const uid = querySnapshot.docs.find(d => d.data().username === entry.name)?.id;
+            if (uid) {
+              try {
+                const userSnap = await getDoc(doc(db, 'users', uid));
+                if (userSnap.exists() && userSnap.data().isBanned) continue;
+              } catch { /* if we can't read, include them */ }
+            }
+            filteredScores.push(entry);
+          }
+
+          setLeaderboard(filteredScores.slice(0, 50));
+          localStorage.setItem('arkanoid_leaderboard', JSON.stringify(filteredScores.slice(0, 50)));
         } catch (e) {
           console.error("Error fetching leaderboard: ", e);
         }
@@ -326,6 +348,130 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, [isOnline]); // Trigger whenever connection changes
 
+
+  // ===== ADMIN PANEL FUNCTIONS =====
+
+  const loadAllUsers = async () => {
+    setAdminLoading(true);
+    setAdminError(null);
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      const users: AdminUserData[] = [];
+      snap.forEach(d => {
+        const data = d.data();
+        const inv = data.inventory || {};
+        users.push({
+          uid: d.id,
+          username: data.username || 'Desconocido',
+          coins: inv.coins ?? 0,
+          lastActive: data.lastActive || '',
+          isBanned: data.isBanned || false,
+          equipped: inv.equipped || { paddle: '-', ball: '-', background: '-', block: '-' },
+          unlockedIds: inv.unlockedIds || [],
+        });
+      });
+      // sort by lastActive descending
+      users.sort((a, b) => b.lastActive.localeCompare(a.lastActive));
+      setAdminUsers(users);
+    } catch (e) {
+      setAdminError('Error cargando usuarios. Verifica tu conexión.');
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const adminDeleteUser = async (uid: string) => {
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      await deleteDoc(doc(db, 'leaderboards', uid));
+      setAdminUsers(prev => prev.filter(u => u.uid !== uid));
+    } catch (e) {
+      setAdminError('Error al borrar el usuario.');
+    }
+  };
+
+  const adminResetScore = async (uid: string) => {
+    try {
+      await deleteDoc(doc(db, 'leaderboards', uid));
+      setAdminUsers(prev => prev); // just re-render, score is external
+    } catch (e) {
+      setAdminError('Error al resetear el puntaje.');
+    }
+  };
+
+  const adminBanFromRanking = async (uid: string, isBanned: boolean) => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      await setDoc(userRef, { isBanned: !isBanned }, { merge: true });
+      setAdminUsers(prev => prev.map(u => u.uid === uid ? { ...u, isBanned: !isBanned } : u));
+    } catch (e) {
+      setAdminError('Error al modificar el ban.');
+    }
+  };
+
+  const adminRemoveCoins = async (uid: string) => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const inv = snap.data().inventory || {};
+        const newInv = { ...inv, coins: 0 };
+        await setDoc(userRef, { inventory: newInv }, { merge: true });
+        setAdminUsers(prev => prev.map(u => u.uid === uid ? { ...u, coins: 0 } : u));
+      }
+    } catch (e) {
+      setAdminError('Error al quitar monedas.');
+    }
+  };
+
+  const adminRemoveItem = async (uid: string, itemId: string) => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        const inv = snap.data().inventory || {};
+        const newUnlocked = (inv.unlockedIds || []).filter((id: string) => id !== itemId);
+        // If item was equipped, reset to default
+        const newEquipped = { ...inv.equipped };
+        if (newEquipped.paddle === itemId) newEquipped.paddle = 'paddle_default';
+        if (newEquipped.ball === itemId) newEquipped.ball = 'ball_default';
+        if (newEquipped.background === itemId) newEquipped.background = 'bg_default';
+        if (newEquipped.block === itemId) newEquipped.block = 'block_default';
+        const newInv = { ...inv, unlockedIds: newUnlocked, equipped: newEquipped };
+        await setDoc(userRef, { inventory: newInv }, { merge: true });
+        setAdminUsers(prev => prev.map(u => u.uid === uid
+          ? { ...u, unlockedIds: newUnlocked, equipped: newEquipped }
+          : u));
+      }
+    } catch (e) {
+      setAdminError('Error al quitar el ítem.');
+    }
+  };
+
+  const formatLastActive = (iso: string): string => {
+    if (!iso) return 'Nunca';
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Ahora mismo';
+    if (mins < 60) return `Hace ${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `Hace ${hrs} h`;
+    const days = Math.floor(hrs / 24);
+    return `Hace ${days} día${days > 1 ? 's' : ''}`;
+  };
+
+  const handleAdminConfirm = async () => {
+    if (!adminConfirm) return;
+    const { type, uid, itemId } = adminConfirm;
+    if (type === 'delete') await adminDeleteUser(uid);
+    else if (type === 'reset') await adminResetScore(uid);
+    else if (type === 'coins') await adminRemoveCoins(uid);
+    else if (type === 'item' && itemId) await adminRemoveItem(uid, itemId);
+    setAdminConfirm(null);
+    setAdminItemTarget(null);
+  };
+
+  // ===== END ADMIN PANEL FUNCTIONS =====
 
   const handleAuthSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1211,12 +1357,23 @@ const App: React.FC = () => {
                 )}
 
               {currentUser ? (
-                <button
-                  onClick={logout}
-                  className="mt-2 w-full px-4 py-3 bg-zinc-950 hover:bg-zinc-900 text-red-500/80 hover:text-red-500 border border-zinc-900 hover:border-red-900/50 rounded-lg text-[10px] tracking-tighter transition-all"
-                >
-                  CERRAR SESIÓN
-                </button>
+                <>
+                  {/* ADMIN BUTTON - Only visible for JosiElPro */}
+                  {auth.currentUser?.email === ADMIN_EMAIL && (
+                    <button
+                      onClick={() => { setShowAdminPanel(true); loadAllUsers(); }}
+                      className="mt-2 w-full px-4 py-3 bg-purple-950/60 hover:bg-purple-900/60 text-purple-300 hover:text-purple-100 border border-purple-900/50 hover:border-purple-500/50 rounded-lg text-[10px] tracking-tighter transition-all flex items-center justify-center gap-2"
+                    >
+                      🔐 PANEL ADMIN
+                    </button>
+                  )}
+                  <button
+                    onClick={logout}
+                    className="mt-2 w-full px-4 py-3 bg-zinc-950 hover:bg-zinc-900 text-red-500/80 hover:text-red-500 border border-zinc-900 hover:border-red-900/50 rounded-lg text-[10px] tracking-tighter transition-all"
+                  >
+                    CERRAR SESIÓN
+                  </button>
+                </>
                ) : (
                 <div className="flex gap-4 w-full">
                   <button
@@ -1316,6 +1473,102 @@ const App: React.FC = () => {
 
        {/* Overlays */}
       {renderShopModal()}
+
+      {/* ADMIN PANEL MODAL */}
+      {showAdminPanel && (
+        <div className="absolute inset-0 z-[150] bg-black/90 backdrop-blur-sm flex flex-col overflow-hidden">
+          <div className="flex flex-col h-full max-w-2xl mx-auto w-full p-4">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <div>
+                <h2 className="text-purple-300 font-bold text-lg">🔐 PANEL ADMIN</h2>
+                <p className="text-zinc-500 text-xs">{adminLoading ? 'Cargando...' : `${adminUsers.length} pilotos registrados`}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={loadAllUsers} className="text-xs text-zinc-400 hover:text-white border border-zinc-700 px-3 py-1 rounded-lg transition-colors">↺ Actualizar</button>
+                <button onClick={() => { setShowAdminPanel(false); setAdminUsers([]); setAdminItemTarget(null); setAdminError(null); }} className="text-zinc-500 hover:text-white text-xl px-2">✕</button>
+              </div>
+            </div>
+
+            {adminError && (
+              <div className="bg-red-500/20 border border-red-500/50 text-red-300 text-xs p-3 rounded-lg mb-3 shrink-0">{adminError}</div>
+            )}
+
+            {/* User List */}
+            <div className="flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
+              {adminLoading && (
+                <div className="text-center text-zinc-500 py-10">Cargando pilotos...</div>
+              )}
+              {!adminLoading && adminUsers.map(u => {
+                const paddleName = SHOP_ITEMS.find(i => i.id === u.equipped?.paddle)?.name || u.equipped?.paddle;
+                const ballName = SHOP_ITEMS.find(i => i.id === u.equipped?.ball)?.name || u.equipped?.ball;
+                const isShowingItems = adminItemTarget === u.uid;
+                const purchasedItems = SHOP_ITEMS.filter(i => (u.unlockedIds || []).includes(i.id) && i.id !== 'paddle_default' && i.id !== 'ball_default' && i.id !== 'bg_default' && i.id !== 'block_default');
+
+                return (
+                  <div key={u.uid} className={`bg-zinc-900/80 border rounded-xl p-3 transition-colors ${u.isBanned ? 'border-red-900/50' : 'border-zinc-800'}`}>
+                    {/* Row header */}
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-bold truncate">
+                          {u.isBanned && <span className="text-red-500 mr-1">🔇</span>}{u.username}
+                        </p>
+                        <p className="text-zinc-500 text-[10px]">💰 {u.coins} monedas  ·  🕐 {formatLastActive(u.lastActive)}</p>
+                        <p className="text-zinc-600 text-[10px] truncate">🏓 {paddleName}  ·  ⚽ {ballName}</p>
+                      </div>
+                      {/* Action buttons */}
+                      <div className="flex gap-1 shrink-0 flex-wrap justify-end">
+                        <button onClick={() => setAdminConfirm({ type: 'reset', uid: u.uid, username: u.username })} className="text-[9px] px-2 py-1 bg-blue-900/40 text-blue-300 hover:bg-blue-800/60 border border-blue-900/50 rounded transition-colors">↺ SCORE</button>
+                        <button onClick={() => adminBanFromRanking(u.uid, !!u.isBanned)} className={`text-[9px] px-2 py-1 border rounded transition-colors ${u.isBanned ? 'bg-green-900/40 text-green-300 border-green-900/50 hover:bg-green-800/60' : 'bg-orange-900/40 text-orange-300 border-orange-900/50 hover:bg-orange-800/60'}`}>{u.isBanned ? '✓ DESBANEAR' : '🔇 BANEAR'}</button>
+                        <button onClick={() => setAdminConfirm({ type: 'coins', uid: u.uid, username: u.username })} className="text-[9px] px-2 py-1 bg-yellow-900/40 text-yellow-300 hover:bg-yellow-800/60 border border-yellow-900/50 rounded transition-colors">💸 MONEDAS</button>
+                        <button onClick={() => setAdminItemTarget(isShowingItems ? null : u.uid)} className="text-[9px] px-2 py-1 bg-indigo-900/40 text-indigo-300 hover:bg-indigo-800/60 border border-indigo-900/50 rounded transition-colors">🎮 ÍTEMS</button>
+                        <button onClick={() => setAdminConfirm({ type: 'delete', uid: u.uid, username: u.username })} className="text-[9px] px-2 py-1 bg-red-900/40 text-red-400 hover:bg-red-800/60 border border-red-900/50 rounded transition-colors">🗑️ BORRAR</button>
+                      </div>
+                    </div>
+
+                    {/* Item list (expandable) */}
+                    {isShowingItems && (
+                      <div className="mt-2 border-t border-zinc-700 pt-2">
+                        <p className="text-[9px] text-zinc-500 mb-1">Ítems comprados ({purchasedItems.length}):</p>
+                        {purchasedItems.length === 0 && <p className="text-[9px] text-zinc-600">Sin ítems extra.</p>}
+                        <div className="flex flex-wrap gap-1">
+                          {purchasedItems.map(item => (
+                            <button key={item.id} onClick={() => setAdminConfirm({ type: 'item', uid: u.uid, username: u.username, itemId: item.id })} className="text-[9px] px-2 py-0.5 bg-zinc-800 hover:bg-red-900/40 text-zinc-300 hover:text-red-300 border border-zinc-700 hover:border-red-700 rounded transition-colors">
+                              {item.name} ✕
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN CONFIRM DIALOG */}
+      {adminConfirm && (
+        <div className="absolute inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border-2 border-red-900/50 rounded-2xl p-6 w-full max-w-xs text-center shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+            <p className="text-red-400 text-2xl mb-2">
+              {adminConfirm.type === 'delete' ? '🗑️' : adminConfirm.type === 'reset' ? '↺' : adminConfirm.type === 'coins' ? '💸' : '🎮'}
+            </p>
+            <p className="text-white font-bold text-sm mb-1">
+              {adminConfirm.type === 'delete' && '¿Borrar todos los datos de esta cuenta?'}
+              {adminConfirm.type === 'reset' && '¿Resetear el puntaje de este jugador?'}
+              {adminConfirm.type === 'coins' && '¿Quitar todas las monedas?'}
+              {adminConfirm.type === 'item' && `¿Quitar ítem: ${SHOP_ITEMS.find(i => i.id === adminConfirm.itemId)?.name}?`}
+            </p>
+            <p className="text-purple-300 text-sm mb-4 font-semibold">{adminConfirm.username}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setAdminConfirm(null)} className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition-colors">CANCELAR</button>
+              <button onClick={handleAdminConfirm} className="flex-1 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg text-xs transition-colors font-bold">CONFIRMAR</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Offline Notice Bar */}
       <div className={`absolute bottom-0 left-0 right-0 z-[200] bg-red-600 text-white py-4 transition-all duration-500 transform ${showOfflineNotice ? 'translate-y-0' : 'translate-y-full'}`}>
