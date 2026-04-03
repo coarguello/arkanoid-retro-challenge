@@ -138,7 +138,7 @@ export interface ShopItem {
   price: number;
   colorPrimary: string;
   colorSecondary?: string;
-  effectType?: 'glow' | 'none' | 'pulse' | 'fire' | 'rainbow' | 'synthwave' | 'matrix' | 'ocean' | 'blackhole' | 'ice' | 'pixel' | 'ghost' | 'hyperdrive';
+  effectType?: 'glow' | 'none' | 'pulse' | 'fire' | 'rainbow' | 'synthwave' | 'matrix' | 'ocean' | 'blackhole' | 'ice' | 'pixel' | 'ghost' | 'hyperdrive' | 'neon_hollow' | 'neon_hollow_interleaved';
   unlockCondition?: 'boss_kill';
 }
 

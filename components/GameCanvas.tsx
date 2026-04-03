@@ -1635,6 +1635,25 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
           ctx.lineWidth = 2;
           ctx.strokeRect(bx, by, b.width, b.height);
           ctx.lineWidth = 1;
+        } else if (blockItem.effectType === 'neon_hollow') {
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = color;
+          ctx.fillStyle = 'rgba(0,0,0,0.85)';
+          ctx.fillRect(bx, by, b.width, b.height);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(bx, by, b.width, b.height);
+          ctx.lineWidth = 1;
+        } else if (blockItem.effectType === 'neon_hollow_interleaved') {
+          const rowColor = (b.row % 2 === 0) ? blockItem.colorPrimary : (blockItem.colorSecondary || blockItem.colorPrimary);
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = rowColor;
+          ctx.fillStyle = 'rgba(0,0,0,0.85)';
+          ctx.fillRect(bx, by, b.width, b.height);
+          ctx.strokeStyle = rowColor;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(bx, by, b.width, b.height);
+          ctx.lineWidth = 1;
         } else if (blockItem.effectType === 'ice') {
           ctx.fillStyle = color;
           ctx.globalAlpha = 0.6;

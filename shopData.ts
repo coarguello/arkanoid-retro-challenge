@@ -30,19 +30,24 @@ export const SHOP_ITEMS: ShopItem[] = [
     { id: 'bg_synthwave', type: 'background', name: 'NEON SYNTHWAVE', description: 'El paisaje retro supremo', price: 10000, colorPrimary: '#1e1b4b', effectType: 'synthwave' },
 
     { id: 'block_default', type: 'block', name: 'Rojo Clásico', description: 'El estilo original', price: 0, colorPrimary: '#ef4444' },
-    { id: 'block_blue', type: 'block', name: 'Azul Sólido', description: 'Color limpio', price: 100, colorPrimary: '#3b82f6' },
-    { id: 'block_green', type: 'block', name: 'Verde Sólido', description: 'Color táctico', price: 100, colorPrimary: '#10b981' },
-    { id: 'block_yellow', type: 'block', name: 'Amarillo Sólido', description: 'Color ámbar', price: 100, colorPrimary: '#eab308' },
-    { id: 'block_pink', type: 'block', name: 'Rosa Sólido', description: 'Chicle visual', price: 100, colorPrimary: '#ec4899' },
-    { id: 'block_purple', type: 'block', name: 'Morado Sólido', description: 'Real y profundo', price: 100, colorPrimary: '#8b5cf6' },
-    { id: 'block_white', type: 'block', name: 'Blanco Puro', description: 'Ausencia de oscuridad', price: 150, colorPrimary: '#ffffff' },
 
-    { id: 'block_red_blue', type: 'block', name: 'Rojo-Azul', description: 'Combinación Dual', price: 300, colorPrimary: '#ef4444', colorSecondary: '#3b82f6' },
-    { id: 'block_green_yellow', type: 'block', name: 'Verde-Amarillo', description: 'Combinación Dual', price: 300, colorPrimary: '#10b981', colorSecondary: '#eab308' },
-    { id: 'block_pink_cyan', type: 'block', name: 'Rosa-Celeste', description: 'Combinación Dual', price: 300, colorPrimary: '#ec4899', colorSecondary: '#06b6d4' },
-    { id: 'block_orange_purple', type: 'block', name: 'Naranja-Morado', description: 'Combinación Dual', price: 300, colorPrimary: '#f97316', colorSecondary: '#8b5cf6' },
+    // Bloques Neón Huecos (1 Color)
+    { id: 'block_nh_blue', type: 'block', name: 'Neón Azul', description: 'Tubo de gas azul', price: 100, colorPrimary: '#06b6d4', effectType: 'neon_hollow' },
+    { id: 'block_nh_pink', type: 'block', name: 'Neón Magenta', description: 'Tubo de gas magenta', price: 100, colorPrimary: '#ec4899', effectType: 'neon_hollow' },
+    { id: 'block_nh_green', type: 'block', name: 'Neón Verde', description: 'Tubo de gas verde', price: 100, colorPrimary: '#10b981', effectType: 'neon_hollow' },
+    { id: 'block_nh_yellow', type: 'block', name: 'Neón Amarillo', description: 'Tubo de gas amarillo', price: 100, colorPrimary: '#eab308', effectType: 'neon_hollow' },
+    { id: 'block_nh_red', type: 'block', name: 'Neón Rojo', description: 'Tubo de gas rojo', price: 100, colorPrimary: '#ef4444', effectType: 'neon_hollow' },
+    { id: 'block_nh_purple', type: 'block', name: 'Neón Morado', description: 'Tubo de gas morado', price: 100, colorPrimary: '#8b5cf6', effectType: 'neon_hollow' },
+    { id: 'block_nh_white', type: 'block', name: 'Neón Blanco', description: 'Tubo de luz blanca pura', price: 150, colorPrimary: '#ffffff', effectType: 'neon_hollow' },
 
-    { id: 'block_neon', type: 'block', name: 'Bloque Neón', description: 'Brillo intenso Cyberpunk', price: 800, colorPrimary: '#06b6d4', colorSecondary: '#ec4899', effectType: 'synthwave' },
+    // Bloques Neón Intercalados por Fila (2 Colores)
+    { id: 'block_nhi_logo', type: 'block', name: 'Neón Portada', description: 'El mítico diseño del logo (Cian / Magenta)', price: 300, colorPrimary: '#06b6d4', colorSecondary: '#ec4899', effectType: 'neon_hollow_interleaved' },
+    { id: 'block_nhi_fire', type: 'block', name: 'Neón Fuego', description: 'Alterna entre rojo y naranja', price: 300, colorPrimary: '#ef4444', colorSecondary: '#f97316', effectType: 'neon_hollow_interleaved' },
+    { id: 'block_nhi_nature', type: 'block', name: 'Neón Tierra', description: 'Alterna entre verde y amarillo', price: 300, colorPrimary: '#10b981', colorSecondary: '#eab308', effectType: 'neon_hollow_interleaved' },
+    { id: 'block_nhi_dark', type: 'block', name: 'Neón Oscuro', description: 'Alterna entre morado y zafiro', price: 300, colorPrimary: '#8b5cf6', colorSecondary: '#3b82f6', effectType: 'neon_hollow_interleaved' },
+
+    // Bloques Antiguos Premium (mantenidos para variedad extra si el usuario los quiere, o mejor, solo los ocultamos/renombramos si es redundante, pero los mantenemos por ahora)
+    { id: 'block_solid_gradient', type: 'block', name: 'Bloque Termal', description: 'Temperatura en gradiente sólido', price: 800, colorPrimary: '#ef4444', colorSecondary: '#3b82f6' },
     { id: 'block_glass', type: 'block', name: 'Bloque Cristal', description: 'Reflejos fríos de vidrio', price: 1200, colorPrimary: '#93c5fd', effectType: 'ice' },
     { id: 'block_ghost', type: 'block', name: 'Bloque Espectral', description: 'Semitransparente con borde brillante', price: 1500, colorPrimary: '#e5e7eb', effectType: 'ghost' },
 ];
