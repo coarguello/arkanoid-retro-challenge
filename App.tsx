@@ -969,7 +969,7 @@ const App: React.FC = () => {
 
                     <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 mb-2 drop-shadow-lg">CAJA MISTERIOSA</h3>
                     <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
-                      ¿Te sientes con suerte? Invierte 500 monedas y obtén un objeto aleatorio que NO poseas.<br />
+                      ¿Te sientes con suerte? Invierte 500 monedas y obtén un objeto aleatorio. Si sale repetido, te devolvemos 100 monedas.<br />
                       <span className="text-purple-400 font-bold block mt-2">¡Incluso podrías ganar los objetos más caros!</span>
                     </p>
 
