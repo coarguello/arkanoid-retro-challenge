@@ -269,8 +269,12 @@ const App: React.FC = () => {
       const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
       if (!webhookUrl) throw new Error("Webhook no configurado");
 
+      // Simple Profanity Filter (Censorship)
+      const badWords = /put[oa]s?|mierda|carajo|pendej[oa]s?|cabr[oó]n|huev[oó]n|pelotud[oa]s?|bolud[oa]s?|concha|cul[oa]s?|verga|pija|chot[oa]s?|soretes?|cag[oó]n/gi;
+      const cleanText = bugReportText.replace(badWords, '***');
+
       const payload = {
-        content: `**⚠️ Nuevo Reporte de Bug en Core Breaker**\n**Piloto:** ${currentUsername || 'Anónimo'} (${currentUser || 'No registrado'})\n**Mensaje:**\n${bugReportText}`,
+        content: `**⚠️ Nuevo Reporte de Bug en Core Breaker**\n**Piloto:** ${currentUsername || 'Anónimo'} (${currentUser || 'No registrado'})\n**Mensaje:**\n${cleanText}`,
       };
 
       await fetch(webhookUrl, {
