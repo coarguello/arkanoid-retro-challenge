@@ -1366,8 +1366,9 @@ const App: React.FC = () => {
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
             <div className="flex flex-col items-center justify-start w-full min-h-[100dvh] pt-8 md:pt-16 pb-4 sm:pb-8 z-10 mx-auto overflow-y-auto">
-              <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-1 tracking-tighter drop-shadow-2xl">
-                CORE BREAKER
+              <h1 className="flex flex-col items-center justify-center leading-[0.85] text-4xl sm:text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 tracking-tighter drop-shadow-2xl text-center">
+                <span>CORE</span>
+                <span>BREAKER</span>
               </h1>
               <p className="text-[8px] text-blue-400/50 mb-4 sm:mb-8 md:mb-10 tracking-[0.3em] whitespace-nowrap">BATTLE ARCADE SYSTEM</p>
 
