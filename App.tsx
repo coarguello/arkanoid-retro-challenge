@@ -90,6 +90,12 @@ const App: React.FC = () => {
   const [adminConfirm, setAdminConfirm] = useState<{ type: string; uid: string; username: string; itemId?: string } | null>(null);
   const [adminItemTarget, setAdminItemTarget] = useState<string | null>(null); // uid of user whose items are being managed
 
+  // --- Bug Reporter State ---
+  const [showBugReporter, setShowBugReporter] = useState(false);
+  const [bugReportText, setBugReportText] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [bugReportStatus, setBugReportStatus] = useState<{type: 'success'|'error', text: string} | null>(null);
+
   useEffect(() => {
     if (isMuted) { stopMusic(); return; }
     if (gameState === GameState.MENU) playMenuMusic();
@@ -250,6 +256,41 @@ const App: React.FC = () => {
       }
       return prev;
     });
+  };
+
+  const sendBugReportToDiscord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bugReportText.trim()) return;
+
+    setIsSubmittingReport(true);
+    setBugReportStatus(null);
+    
+    try {
+      const webhookUrl = import.meta.env.VITE_DISCORD_WEBHOOK_URL;
+      if (!webhookUrl) throw new Error("Webhook no configurado");
+
+      const payload = {
+        content: `**⚠️ Nuevo Reporte de Bug en Core Breaker**\n**Piloto:** ${currentUsername || 'Anónimo'} (${currentUser || 'No registrado'})\n**Mensaje:**\n${bugReportText}`,
+      };
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      setBugReportStatus({ type: 'success', text: '¡Reporte enviado exitosamente!' });
+      setBugReportText('');
+      setTimeout(() => {
+        setShowBugReporter(false);
+        setBugReportStatus(null);
+      }, 2000);
+    } catch (e) {
+      console.error(e);
+      setBugReportStatus({ type: 'error', text: 'Error al enviar reporte. Intenta más tarde.' });
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   const startGame = () => {
@@ -1230,6 +1271,17 @@ const App: React.FC = () => {
             )}
           </button>
 
+          {/* Bug Reporter Button HUD */}
+          {gameState === GameState.PLAYING && (
+            <button
+              onClick={() => setShowBugReporter(true)}
+              className="p-2 bg-black/50 border border-amber-900/50 rounded-lg text-amber-500 hover:bg-amber-900/20 hover:text-amber-400 transition-colors"
+              title="Reportar Error"
+            >
+              ⚠️
+            </button>
+          )}
+
           {/* Pause Button */}
           {gameState === GameState.PLAYING && (
             <button
@@ -1434,6 +1486,12 @@ const App: React.FC = () => {
               por <span className="text-blue-600">JosiElPro</span>
             </div>
 
+            <div className="absolute bottom-4 left-4 z-50">
+              <button onClick={() => setShowBugReporter(true)} className="px-3 py-1 bg-amber-900/30 border border-amber-900/50 rounded text-[10px] text-amber-500 hover:text-amber-400 hover:bg-amber-900/60 tracking-wider flex items-center gap-1 transition-colors">
+                ⚠️ REPORTAR BUG
+              </button>
+            </div>
+
             {renderAuthModal()}
             </div>
           </div>
@@ -1577,6 +1635,38 @@ const App: React.FC = () => {
             <span className="text-[10px] tracking-[0.2em] font-bold">FUNCIÓN NO DISPONIBLE SIN CONEXIÓN</span>
         </div>
       </div>
+
+      {/* Bug Reporter Modal Overlay */}
+      {showBugReporter && (
+        <div className="absolute inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 w-full max-w-xs shadow-2xl relative">
+            <h2 className="text-amber-500 font-bold mb-4 tracking-widest text-center flex items-center justify-center gap-2">
+              ⚠️ REPORTAR BUG
+            </h2>
+            <form onSubmit={sendBugReportToDiscord}>
+              <textarea
+                value={bugReportText}
+                onChange={e => setBugReportText(e.target.value)}
+                placeholder="Describe el error en detalle..."
+                className="w-full h-24 bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-white text-xs mb-4 focus:outline-none focus:border-amber-500/50 resize-none font-sans"
+                disabled={isSubmittingReport}
+                required
+              />
+              {bugReportStatus && (
+                <div className={`text-[10px] p-2 rounded mb-4 text-center ${bugReportStatus.type === 'error' ? 'bg-red-900/40 border border-red-900/50 text-red-400' : 'bg-green-900/40 border border-green-900/50 text-green-400'}`}>
+                  {bugReportStatus.text}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setShowBugReporter(false)} className="flex-1 py-3 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors border border-zinc-700" disabled={isSubmittingReport}>CANCELAR</button>
+                <button type="submit" className="flex-1 py-3 text-xs bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors border border-amber-600 disabled:opacity-50" disabled={isSubmittingReport}>
+                  {isSubmittingReport ? 'ENVIANDO...' : 'ENVIAR'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div >
   );
 };
