@@ -106,6 +106,14 @@ const App: React.FC = () => {
 
   const handleToggleMute = () => setIsMuted(audioToggleMute());
 
+  const syncInventory = (newInv: UserInventory) => {
+    localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+    if (currentUser && isOnline) {
+      setDoc(doc(db, 'users', currentUser), { inventory: newInv }, { merge: true })
+        .catch(e => console.error("Error syncing inventory:", e));
+    }
+  };
+
   // Track if game is over to update leaderboard, points, and trigger a random store discount
   useEffect(() => {
     if (gameState === GameState.GAME_OVER) {
@@ -145,12 +153,7 @@ const App: React.FC = () => {
         // 3. Give points to user for the shop
         setInventory(prev => {
           const newInv = { ...prev, totalPoints: prev.totalPoints + score };
-          localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
-          // Async update user doc points in DB (Only if online)
-          if (currentUser && isOnline) {
-            setDoc(doc(db, 'users', currentUser), { inventory: newInv }, { merge: true })
-              .catch(e => console.error("Error updating user points:", e));
-          }
+          syncInventory(newInv);
           return newInv;
         });
       }
@@ -251,7 +254,7 @@ const App: React.FC = () => {
     setInventory(prev => {
       if (!prev.isBossDefeated) {
         const newInv = { ...prev, isBossDefeated: true };
-        localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+        syncInventory(newInv);
         return newInv;
       }
       return prev;
@@ -780,7 +783,7 @@ const App: React.FC = () => {
           coins: prev.coins - finalPrice,
           unlockedIds: [...prev.unlockedIds, item.id]
         };
-        localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+        syncInventory(newInv);
         return newInv;
       }
       return prev;
@@ -794,7 +797,7 @@ const App: React.FC = () => {
           ...prev,
           equipped: { ...prev.equipped, [item.type]: item.id }
         };
-        localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+        syncInventory(newInv);
         return newInv;
       });
     }
@@ -824,7 +827,7 @@ const App: React.FC = () => {
           coins: prev.coins + coinsToGive,
           totalPoints: prev.totalPoints - pointsToDeduct
         };
-        localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+        syncInventory(newInv);
         return newInv;
       }
       return prev;
@@ -848,7 +851,7 @@ const App: React.FC = () => {
 
       // Take coins immediately
       const newInv = { ...currentInv, coins: currentInv.coins - 500 };
-      localStorage.setItem('arkanoid_inventory', JSON.stringify(newInv));
+      syncInventory(newInv);
 
       // Simulate roulette delay
       setTimeout(() => {
@@ -883,12 +886,12 @@ const App: React.FC = () => {
 
           if (!isDuplicate) {
             const finalInv = { ...latestInv, unlockedIds: [...latestInv.unlockedIds, randomReward.id] };
-            localStorage.setItem('arkanoid_inventory', JSON.stringify(finalInv));
+            syncInventory(finalInv);
             return finalInv;
           } else {
             // Give a 100 coin consolation refund for duplicates
             const refundInv = { ...latestInv, coins: latestInv.coins + 100 };
-            localStorage.setItem('arkanoid_inventory', JSON.stringify(refundInv));
+            syncInventory(refundInv);
             return refundInv;
           }
         });
