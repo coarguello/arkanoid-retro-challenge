@@ -1366,7 +1366,7 @@ const App: React.FC = () => {
             <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_70%)]"></div>
 
             <div className="flex flex-col items-center justify-start w-full min-h-[100dvh] pt-8 md:pt-16 pb-4 sm:pb-8 z-10 mx-auto overflow-y-auto">
-              <h1 className="flex flex-col items-center justify-center leading-[0.85] text-4xl sm:text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 tracking-tighter drop-shadow-2xl text-center">
+              <h1 className="flex flex-row items-center justify-center gap-1 sm:gap-2 text-4xl sm:text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-700 mb-2 tracking-tight drop-shadow-2xl text-center">
                 <span>CORE</span>
                 <span>BREAKER</span>
               </h1>
