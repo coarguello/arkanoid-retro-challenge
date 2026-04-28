@@ -1494,12 +1494,7 @@ const App: React.FC = () => {
               por <span className="text-blue-600">JosiElPro</span>
             </div>
 
-            <div className="absolute bottom-4 left-4 z-50">
-              <button onClick={() => setShowBugReporter(true)} className="px-3 py-1 bg-amber-900/30 border border-amber-900/50 rounded text-[10px] text-amber-500 hover:text-amber-400 hover:bg-amber-900/60 tracking-wider flex items-center gap-1.5 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                REPORTAR BUG
-              </button>
-            </div>
+
 
             {renderAuthModal()}
             </div>
