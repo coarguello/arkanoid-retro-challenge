@@ -342,8 +342,28 @@ const App: React.FC = () => {
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const cloudInv = userSnap.data().inventory;
-            setInventory(cloudInv);
-            localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
+
+            // --- MIGRATION: Grant new default items to existing users ---
+            const newDefaultItems = ['paddle_nh_cyan', 'block_nhi_logo'];
+            const currentUnlocked: string[] = cloudInv.unlockedIds || [];
+            const missingItems = newDefaultItems.filter(id => !currentUnlocked.includes(id));
+
+            if (missingItems.length > 0) {
+              const migratedInv = {
+                ...cloudInv,
+                unlockedIds: [...currentUnlocked, ...missingItems],
+              };
+              // Save silently in background without blocking
+              setDoc(userRef, { inventory: migratedInv }, { merge: true })
+                .catch(e => console.error('Migration error:', e));
+              setInventory(migratedInv);
+              localStorage.setItem('arkanoid_inventory', JSON.stringify(migratedInv));
+            } else {
+              setInventory(cloudInv);
+              localStorage.setItem('arkanoid_inventory', JSON.stringify(cloudInv));
+            }
+            // --- END MIGRATION ---
+
           } else {
             // Create default document if it doesn't exist (clean slate for new users)
             const defaultInventory: UserInventory = {
