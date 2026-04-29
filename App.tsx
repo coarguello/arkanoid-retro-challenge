@@ -349,8 +349,8 @@ const App: React.FC = () => {
             const defaultInventory: UserInventory = {
               coins: 0,
               totalPoints: 0,
-              unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default'],
-              equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default', block: 'block_default' },
+              unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default', 'paddle_nh_cyan', 'block_nhi_logo'],
+              equipped: { paddle: 'paddle_nh_cyan', ball: 'ball_default', background: 'bg_default', block: 'block_nhi_logo' },
               isBossDefeated: false
             };
             await setDoc(userRef, {
@@ -389,8 +389,8 @@ const App: React.FC = () => {
         const defaultInventory: UserInventory = {
           coins: 0,
           totalPoints: 0,
-          unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default'],
-          equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default', block: 'block_default' },
+          unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default', 'paddle_nh_cyan', 'block_nhi_logo'],
+          equipped: { paddle: 'paddle_nh_cyan', ball: 'ball_default', background: 'bg_default', block: 'block_nhi_logo' },
           isBossDefeated: false
         };
         setInventory(defaultInventory);
@@ -556,8 +556,8 @@ const App: React.FC = () => {
         const defaultInventory: UserInventory = {
           coins: 0,
           totalPoints: 0,
-          unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default'],
-          equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default', block: 'block_default' },
+          unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default', 'paddle_nh_cyan', 'block_nhi_logo'],
+          equipped: { paddle: 'paddle_nh_cyan', ball: 'ball_default', background: 'bg_default', block: 'block_nhi_logo' },
           isBossDefeated: false
         };
         const userRef = doc(db, 'users', userCredential.user.uid);
@@ -605,8 +605,8 @@ const App: React.FC = () => {
       const defaultInventory: UserInventory = {
         coins: 0,
         totalPoints: 0,
-        unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default'],
-        equipped: { paddle: 'paddle_default', ball: 'ball_default', background: 'bg_default', block: 'block_default' },
+        unlockedIds: ['paddle_default', 'ball_default', 'bg_default', 'block_default', 'paddle_nh_cyan', 'block_nhi_logo'],
+        equipped: { paddle: 'paddle_nh_cyan', ball: 'ball_default', background: 'bg_default', block: 'block_nhi_logo' },
         isBossDefeated: false
       };
       setInventory(defaultInventory);
